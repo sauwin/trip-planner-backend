@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+build/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+npm-debug.log*
+logs/
+
+# Editor
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# TypeScript
+*.tsbuildinfo
+
+# Database (якщо пізніше будеш використовувати локальний SQLite/файлову БД)
+*.sqlite
+*.sqlite3
+
+# Uploads/cache (якщо буде user-generated content)
+uploads/
+tmp/
