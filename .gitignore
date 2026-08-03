@@ -34,3 +34,5 @@ Thumbs.db
 # Uploads/cache (якщо буде user-generated content)
 uploads/
 tmp/
+
+src/generated/
