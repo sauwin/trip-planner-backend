@@ -1,0 +1,107 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  country      String?
+  ageRange     String?
+  createdAt    DateTime @default(now())
+
+  interactions Interaction[]
+  trips        Trip[]
+}
+
+model Destination {
+  id              String   @id @default(uuid())
+  slug            String   @unique
+  country         String
+  latitude        Float
+  longitude       Float
+  translations    Json
+  popularityScore Float    @default(0)
+  createdAt       DateTime @default(now())
+
+  features         DestinationFeature[]
+  interactions     Interaction[]
+  tripDestinations TripDestination[]
+}
+
+model FeatureCategory {
+  id            String @id @default(uuid())
+  key           String @unique
+  defaultWeight Float  @default(1.0)
+
+  features Feature[]
+}
+
+model Feature {
+  id         String @id @default(uuid())
+  key        String @unique
+  categoryId String
+
+  category     FeatureCategory      @relation(fields: [categoryId], references: [id])
+  destinations DestinationFeature[]
+}
+
+model DestinationFeature {
+  destinationId String
+  featureId     String
+  weight        Float  @default(1.0)
+
+  destination Destination @relation(fields: [destinationId], references: [id], onDelete: Cascade)
+  feature     Feature     @relation(fields: [featureId], references: [id], onDelete: Cascade)
+
+  @@id([destinationId, featureId])
+  @@index([featureId])
+}
+
+enum InteractionType {
+  VIEW
+  LIKE
+  RATING
+  SAVE
+}
+
+model Interaction {
+  id            String           @id @default(uuid())
+  userId        String
+  destinationId String
+  type          InteractionType
+  value         Int?
+  createdAt     DateTime         @default(now())
+
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  destination Destination @relation(fields: [destinationId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([destinationId])
+}
+
+model Trip {
+  id        String   @id @default(uuid())
+  userId    String
+  title     String
+  createdAt DateTime @default(now())
+
+  user         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  destinations TripDestination[]
+}
+
+model TripDestination {
+  tripId        String
+  destinationId String
+  position      Int
+  plannedDate   DateTime?
+
+  trip        Trip        @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  destination Destination @relation(fields: [destinationId], references: [id], onDelete: Cascade)
+
+  @@id([tripId, destinationId])
+}
