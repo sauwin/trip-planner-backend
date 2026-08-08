@@ -6,6 +6,7 @@ async function main() {
   const climate = await prisma.featureCategory.create({ data: { key: 'climate', defaultWeight: 0.8 } });
   const budget = await prisma.featureCategory.create({ data: { key: 'budget', defaultWeight: 0.6 } });
   const landscape = await prisma.featureCategory.create({ data: { key: 'landscape', defaultWeight: 0.7 } });
+  const season = await prisma.featureCategory.create({ data: { key: 'season', defaultWeight: 0.75 } });
 
   const hiking = await prisma.feature.create({ data: { key: 'hiking', categoryId: activity.id } });
   const beach = await prisma.feature.create({ data: { key: 'beach', categoryId: activity.id } });
@@ -20,6 +21,11 @@ async function main() {
 
   const mountains = await prisma.feature.create({ data: { key: 'mountains', categoryId: landscape.id } });
   const coastal = await prisma.feature.create({ data: { key: 'coastal', categoryId: landscape.id } });
+
+  const spring = await prisma.feature.create({ data: { key: 'spring', categoryId: season.id } });
+  const summer = await prisma.feature.create({ data: { key: 'summer', categoryId: season.id } });
+  const autumn = await prisma.feature.create({ data: { key: 'autumn', categoryId: season.id } });
+  const winter = await prisma.feature.create({ data: { key: 'winter', categoryId: season.id } });
 
   const destinations = [
     {
@@ -37,6 +43,8 @@ async function main() {
         { feature: mountains, weight: 0.95 },
         { feature: cold, weight: 0.7 },
         { feature: budgetLow, weight: 0.6 },
+        { feature: winter, weight: 0.9 },
+        { feature: summer, weight: 0.6 },
       ],
     },
     {
@@ -56,6 +64,8 @@ async function main() {
         { feature: warm, weight: 0.8 },
         { feature: coastal, weight: 0.9 },
         { feature: budgetHigh, weight: 0.6 },
+        { feature: summer, weight: 0.85 },
+        { feature: spring, weight: 0.65 },
       ],
     },
     {
@@ -73,6 +83,8 @@ async function main() {
         { feature: nightlife, weight: 0.6 },
         { feature: cold, weight: 0.5 },
         { feature: budgetLow, weight: 0.7 },
+        { feature: spring, weight: 0.75 },
+        { feature: autumn, weight: 0.7 },
       ],
     },
     {
@@ -90,6 +102,7 @@ async function main() {
         { feature: warm, weight: 0.95 },
         { feature: coastal, weight: 0.9 },
         { feature: budgetHigh, weight: 0.9 },
+        { feature: winter, weight: 0.8 },
       ],
     },
     {
@@ -107,6 +120,8 @@ async function main() {
         { feature: mountains, weight: 0.8 },
         { feature: cold, weight: 0.95 },
         { feature: budgetHigh, weight: 0.85 },
+        { feature: summer, weight: 0.85 },
+        { feature: winter, weight: 0.55 },
       ],
     },
     {
@@ -124,6 +139,7 @@ async function main() {
         { feature: museums, weight: 0.5 },
         { feature: warm, weight: 0.9 },
         { feature: budgetLow, weight: 0.85 },
+        { feature: winter, weight: 0.85 },
       ],
     },
   ];
@@ -139,7 +155,7 @@ async function main() {
     );
   }
 
-  console.log('Seed complete: 6 destinations, 4 categories, 10 features.');
+  console.log('Seed complete: 6 destinations, 5 categories, 14 features.');
 }
 
 main()

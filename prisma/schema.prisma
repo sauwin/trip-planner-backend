@@ -15,8 +15,11 @@ model User {
   ageRange     String?
   createdAt    DateTime @default(now())
 
-  interactions Interaction[]
-  trips        Trip[]
+  interactions  Interaction[]
+  trips         Trip[]
+  refreshTokens RefreshToken[]
+
+  preferences UserPreference[]
 }
 
 model Destination {
@@ -40,6 +43,8 @@ model FeatureCategory {
   defaultWeight Float  @default(1.0)
 
   features Feature[]
+
+  userPreferences UserPreference[]
 }
 
 model Feature {
@@ -49,6 +54,8 @@ model Feature {
 
   category     FeatureCategory      @relation(fields: [categoryId], references: [id])
   destinations DestinationFeature[]
+
+  userPreferences UserPreference[]
 }
 
 model DestinationFeature {
@@ -105,4 +112,32 @@ model TripDestination {
   destination Destination @relation(fields: [destinationId], references: [id], onDelete: Cascade)
 
   @@id([tripId, destinationId])
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  tokenHash String   @unique
+  userId    String
+  expiresAt DateTime
+  revoked   Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model UserPreference {
+  id         String   @id @default(uuid())
+  userId     String
+  categoryId String
+  featureId  String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user     User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category FeatureCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  feature  Feature         @relation(fields: [featureId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, categoryId])
 }

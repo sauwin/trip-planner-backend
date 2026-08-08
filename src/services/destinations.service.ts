@@ -1,4 +1,5 @@
 import { prisma } from '../lib/prisma';
+import { Prisma } from '../generated/prisma/client';
 
 export async function getAllDestinations() {
   return prisma.destination.findMany();
@@ -13,4 +14,12 @@ export async function getDestinationById(id: string) {
       },
     },
   });
+}
+
+export async function createDestination(data: { slug: string; country: string; latitude: number; longitude: number; translations: Prisma.InputJsonValue; }) {
+  return prisma.destination.create({ data });
+}
+
+export async function deleteDestination(id: string) {
+  return prisma.destination.delete({ where: { id } });
 }
