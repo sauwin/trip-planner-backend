@@ -5,9 +5,11 @@ import { validateBody } from '../middleware/validate';
 import { createTripSchema, addDestinationSchema, deleteTripSchema } from '../schemas/trips.schema';
 import { updateAccommodationSchema } from '../schemas/trips.schema';
 import { updateAccommodationHandler } from '../controllers/trips.controller';
+import expensesRouter from './expenses.routes';
 
 const router = Router();
 
+router.use('/:tripId/expenses', expensesRouter);
 router.post('/', requireAuth, validateBody(createTripSchema), createTripHandler);
 router.get('/', requireAuth, listTripsHandler);
 router.get('/:id', requireAuth, getTripHandler);
