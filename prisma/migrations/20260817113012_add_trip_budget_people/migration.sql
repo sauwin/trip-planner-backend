@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "Trip" ADD COLUMN     "budgetTotal" DOUBLE PRECISION,
+ADD COLUMN     "peopleCount" INTEGER NOT NULL DEFAULT 1;

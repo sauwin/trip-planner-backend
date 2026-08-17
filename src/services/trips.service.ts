@@ -1,7 +1,25 @@
 import { prisma } from '../lib/prisma';
 
-export async function createTrip(userId: string, title: string) {
-  return prisma.trip.create({ data: { userId, title } });
+interface AccommodationInput {
+  accommodationName?: string;
+  accommodationPrice?: number;
+  accommodationUrl?: string;
+}
+
+export async function createTrip(
+  userId: string,
+  title: string,
+  budgetTotal?: number,
+  peopleCount?: number,
+) {
+  return prisma.trip.create({
+    data: {
+      userId,
+      title,
+      budgetTotal,
+      peopleCount: peopleCount ?? 1,
+    },
+  });
 }
 
 export async function getUserTrips(userId: string) {
@@ -23,11 +41,20 @@ export async function getTripById(userId: string, tripId: string) {
   });
 }
 
+export async function deleteTrip(userId: string, tripId: string) {
+  const trip = await prisma.trip.findFirst({ where: { id: tripId, userId } });
+  if (!trip) {
+    throw new Error('TRIP_NOT_FOUND');
+  }
+  return prisma.trip.delete({ where: { id: tripId } });
+}
+
 export async function addDestinationToTrip(
   userId: string,
   tripId: string,
   destinationId: string,
   plannedDate?: string,
+  accommodation?: AccommodationInput,
 ) {
   const trip = await prisma.trip.findFirst({ where: { id: tripId, userId } });
   if (!trip) {
@@ -42,14 +69,24 @@ export async function addDestinationToTrip(
       destinationId,
       position: lastPosition,
       plannedDate: plannedDate ? new Date(plannedDate) : null,
+      ...accommodation,
     },
   });
 }
 
-export async function deleteTrip(userId: string, tripId: string) {
+export async function updateAccommodation(
+  userId: string,
+  tripId: string,
+  destinationId: string,
+  accommodation: AccommodationInput,
+) {
   const trip = await prisma.trip.findFirst({ where: { id: tripId, userId } });
   if (!trip) {
     throw new Error('TRIP_NOT_FOUND');
   }
-  return prisma.trip.delete({ where: { id: tripId } });
+
+  return prisma.tripDestination.update({
+    where: { tripId_destinationId: { tripId, destinationId } },
+    data: accommodation,
+  });
 }

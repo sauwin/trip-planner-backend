@@ -1,6 +1,6 @@
 import { Response } from 'express';
 import { AuthenticatedRequest } from '../middleware/auth.middleware';
-import { createTrip, getUserTrips, getTripById, addDestinationToTrip, deleteTrip } from '../services/trips.service';
+import { createTrip, getUserTrips, getTripById, addDestinationToTrip, deleteTrip, updateAccommodation } from '../services/trips.service';
 
 function getParamId(value: string | string[]) {
   const id = Array.isArray(value) ? value[0] : value;
@@ -14,12 +14,8 @@ function getParamId(value: string | string[]) {
 
 export async function createTripHandler(req: AuthenticatedRequest, res: Response) {
   try {
-    const { title } = req.body;
-    if (!title) {
-      res.status(400).json({ error: 'title is required' });
-      return;
-    }
-    const trip = await createTrip(req.userId!, title);
+    const { title, budgetTotal, peopleCount } = req.body;
+    const trip = await createTrip(req.userId!, title, budgetTotal, peopleCount);
     res.status(201).json(trip);
   } catch (error) {
     console.error(error);
@@ -58,19 +54,15 @@ export async function getTripHandler(req: AuthenticatedRequest, res: Response) {
 
 export async function addDestinationHandler(req: AuthenticatedRequest, res: Response) {
   try {
-    const { destinationId, plannedDate } = req.body;
-    if (!destinationId) {
-      res.status(400).json({ error: 'destinationId is required' });
-      return;
-    }
+    const { destinationId, plannedDate, accommodationName, accommodationPrice, accommodationUrl } = req.body;
     const tripId = getParamId(req.params.id);
-    const result = await addDestinationToTrip(req.userId!, tripId, destinationId, plannedDate);
+    const result = await addDestinationToTrip(req.userId!, tripId, destinationId, plannedDate, {
+      accommodationName,
+      accommodationPrice,
+      accommodationUrl,
+    });
     res.status(201).json(result);
   } catch (error: any) {
-    if (error instanceof Error && error.message === 'INVALID_TRIP_ID') {
-      res.status(400).json({ error: 'Trip id is required' });
-      return;
-    }
     if (error.message === 'TRIP_NOT_FOUND') {
       res.status(404).json({ error: 'Trip not found' });
       return;
@@ -85,6 +77,27 @@ export async function addDestinationHandler(req: AuthenticatedRequest, res: Resp
     }
     console.error(error);
     res.status(500).json({ error: 'Failed to add destination to trip' });
+  }
+}
+
+export async function updateAccommodationHandler(req: AuthenticatedRequest, res: Response) {
+  try {
+    const { accommodationName, accommodationPrice, accommodationUrl } = req.body;
+    const tripId = getParamId(req.params.id);
+    const destId = getParamId(req.params.destinationId);
+    const result = await updateAccommodation(req.userId!, tripId, destId, {
+      accommodationName,
+      accommodationPrice,
+      accommodationUrl,
+    });
+    res.json(result);
+  } catch (error: any) {
+    if (error.message === 'TRIP_NOT_FOUND') {
+      res.status(404).json({ error: 'Trip not found' });
+      return;
+    }
+    console.error(error);
+    res.status(500).json({ error: 'Failed to update accommodation' });
   }
 }
 

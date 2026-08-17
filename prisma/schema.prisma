@@ -93,20 +93,25 @@ model Interaction {
 }
 
 model Trip {
-  id        String   @id @default(uuid())
-  userId    String
-  title     String
-  createdAt DateTime @default(now())
+  id           String   @id @default(uuid())
+  userId       String
+  title        String
+  budgetTotal  Float?
+  peopleCount  Int      @default(1)
+  createdAt    DateTime @default(now())
 
   user         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   destinations TripDestination[]
 }
 
 model TripDestination {
-  tripId        String
-  destinationId String
-  position      Int
-  plannedDate   DateTime?
+  tripId              String
+  destinationId       String
+  position            Int
+  plannedDate         DateTime?
+  accommodationName   String?
+  accommodationPrice  Float?
+  accommodationUrl    String?
 
   trip        Trip        @relation(fields: [tripId], references: [id], onDelete: Cascade)
   destination Destination @relation(fields: [destinationId], references: [id], onDelete: Cascade)
