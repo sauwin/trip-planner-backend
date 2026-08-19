@@ -93,16 +93,18 @@ model Interaction {
 }
 
 model Trip {
-  id           String   @id @default(uuid())
+  id           String    @id @default(uuid())
   userId       String
   title        String
   budgetTotal  Float?
-  peopleCount  Int      @default(1)
-  createdAt    DateTime @default(now())
+  peopleCount  Int       @default(1)
+  startDate    DateTime?
+  endDate      DateTime?
+  createdAt    DateTime  @default(now())
 
   user         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   destinations TripDestination[]
-  expenses Expense[]
+  expenses     Expense[]
 }
 
 model TripDestination {

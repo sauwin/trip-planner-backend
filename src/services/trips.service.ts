@@ -11,6 +11,8 @@ export async function createTrip(
   title: string,
   budgetTotal?: number,
   peopleCount?: number,
+  startDate?: string,
+  endDate?: string,
 ) {
   return prisma.trip.create({
     data: {
@@ -18,6 +20,8 @@ export async function createTrip(
       title,
       budgetTotal,
       peopleCount: peopleCount ?? 1,
+      startDate: startDate ? new Date(startDate) : undefined,
+      endDate: endDate ? new Date(endDate) : undefined,
     },
   });
 }

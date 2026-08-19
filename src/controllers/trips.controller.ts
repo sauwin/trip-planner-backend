@@ -14,8 +14,8 @@ function getParamId(value: string | string[]) {
 
 export async function createTripHandler(req: AuthenticatedRequest, res: Response) {
   try {
-    const { title, budgetTotal, peopleCount } = req.body;
-    const trip = await createTrip(req.userId!, title, budgetTotal, peopleCount);
+    const { title, budgetTotal, peopleCount, startDate, endDate } = req.body;
+    const trip = await createTrip(req.userId!, title, budgetTotal, peopleCount, startDate, endDate);
     res.status(201).json(trip);
   } catch (error) {
     console.error(error);

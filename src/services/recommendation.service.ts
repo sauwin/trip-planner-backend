@@ -29,15 +29,18 @@ export async function getRecommendationsForUser(userId: string): Promise<Destina
 
   const results = destinations.map((destination) => {
     let score = 0;
+    let maxScore = 0;
 
     for (const pref of preferences) {
+      maxScore += pref.category.defaultWeight;
       const match = destination.features.find((f) => f.featureId === pref.featureId);
       const matchWeight = match ? match.weight : 0;
       score += pref.category.defaultWeight * matchWeight;
     }
 
     const { features, ...destinationData } = destination;
-    return { destination: destinationData, score };
+    const normalizedScore = maxScore > 0 ? (score / maxScore) * 100 : 0;
+    return { destination: destinationData, score: normalizedScore };
   });
 
   results.sort((a, b) => b.score - a.score);

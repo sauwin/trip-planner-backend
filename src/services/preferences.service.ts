@@ -6,6 +6,21 @@ interface PreferenceInput {
 }
 
 export async function saveUserPreferences(userId: string, preferences: PreferenceInput[]) {
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { id: true } });
+  if (!user) {
+    throw new Error('USER_NOT_FOUND');
+  }
+
+  const features = await prisma.feature.findMany({
+    where: { id: { in: preferences.map(({ featureId }) => featureId) } },
+    select: { id: true, categoryId: true },
+  });
+  const featureById = new Map(features.map((feature) => [feature.id, feature]));
+
+  if (preferences.some(({ categoryId, featureId }) => featureById.get(featureId)?.categoryId !== categoryId)) {
+    throw new Error('INVALID_PREFERENCES');
+  }
+
   const results = await Promise.all(
     preferences.map(({ categoryId, featureId }) =>
       prisma.userPreference.upsert({
