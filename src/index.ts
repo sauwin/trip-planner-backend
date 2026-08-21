@@ -3,6 +3,7 @@ import express from 'express';
 import cors from 'cors';
 
 import { requireAuth } from './middleware/auth.middleware';
+import { globalRateLimit } from './middleware/rateLimit.middleware';
 
 import destinationsRouter from './routes/destinations.routes';
 import authRouter from './routes/auth.routes';
@@ -17,8 +18,8 @@ const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json());
+app.use('/api', globalRateLimit);
 
-// Routes
 app.use('/api/auth', authRouter);
 app.use('/api/destinations', destinationsRouter);
 app.use('/api', metaRouter);
