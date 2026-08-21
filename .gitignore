@@ -27,11 +27,11 @@ Thumbs.db
 # TypeScript
 *.tsbuildinfo
 
-# Database (якщо пізніше будеш використовувати локальний SQLite/файлову БД)
+# Database
 *.sqlite
 *.sqlite3
 
-# Uploads/cache (якщо буде user-generated content)
+# Uploads/cache
 uploads/
 tmp/
 
