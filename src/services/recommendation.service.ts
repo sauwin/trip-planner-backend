@@ -13,7 +13,10 @@ interface DestinationScore {
   score: number;
 }
 
-export async function getRecommendationsForUser(userId: string): Promise<DestinationScore[]> {
+export async function getRecommendationsForUser(
+  userId: string,
+  limit: number = 10
+): Promise<DestinationScore[]> {
   const preferences = await prisma.userPreference.findMany({
     where: { userId },
     include: { category: true },
@@ -32,18 +35,28 @@ export async function getRecommendationsForUser(userId: string): Promise<Destina
     let maxScore = 0;
 
     for (const pref of preferences) {
-      maxScore += pref.category.defaultWeight;
+      const categoryWeight = pref.category.defaultWeight;
+      maxScore += categoryWeight;
+
       const match = destination.features.find((f) => f.featureId === pref.featureId);
       const matchWeight = match ? match.weight : 0;
-      score += pref.category.defaultWeight * matchWeight;
+
+      score += categoryWeight * matchWeight;
     }
 
+    const normalizedScore = maxScore > 0 ? Math.round((score / maxScore) * 100) : 0;
+
     const { features, ...destinationData } = destination;
-    const normalizedScore = maxScore > 0 ? (score / maxScore) * 100 : 0;
     return { destination: destinationData, score: normalizedScore };
   });
 
-  results.sort((a, b) => b.score - a.score);
-
-  return results;
+  return results
+    .filter((r) => r.score > 0)
+    .sort((a, b) => {
+      if (b.score !== a.score) {
+        return b.score - a.score;
+      }
+      return b.destination.popularityScore - a.destination.popularityScore;
+    })
+    .slice(0, limit);
 }

@@ -29,7 +29,7 @@ const cities = [
   'Ljubljana',
 ];
 
-async function fetchCity(name) {
+async function fetchCity(name: string) {
   const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(name)}&count=1`;
   const res = await fetch(url);
   const data = await res.json();
