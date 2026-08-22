@@ -4,6 +4,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 
 import { globalRateLimit } from './middleware/rateLimit.middleware';
+import { notFoundHandler, errorHandler } from './middleware/errorHandler.middleware';
 
 import destinationsRouter from './routes/destinations.routes';
 import authRouter from './routes/auth.routes';
@@ -33,6 +34,9 @@ app.use('/api/trips', tripsRouter);
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok' });
 });
+
+app.use(notFoundHandler);
+app.use(errorHandler);
 
 app.listen(PORT, () => {
   console.log(`Server: http://localhost:${PORT}`);
