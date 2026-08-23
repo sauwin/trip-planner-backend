@@ -13,10 +13,18 @@ interface DestinationScore {
   score: number;
 }
 
+export interface PaginatedRecommendations {
+  items: DestinationScore[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
 export async function getRecommendationsForUser(
   userId: string,
-  limit: number = 10
-): Promise<DestinationScore[]> {
+  limit: number = 10,
+  offset: number = 0
+): Promise<PaginatedRecommendations> {
   const preferences = await prisma.userPreference.findMany({
     where: { userId },
     include: { category: true },
@@ -50,13 +58,19 @@ export async function getRecommendationsForUser(
     return { destination: destinationData, score: normalizedScore };
   });
 
-  return results
+  const ranked = results
     .filter((r) => r.score > 0)
     .sort((a, b) => {
       if (b.score !== a.score) {
         return b.score - a.score;
       }
       return b.destination.popularityScore - a.destination.popularityScore;
-    })
-    .slice(0, limit);
+    });
+
+  return {
+    items: ranked.slice(offset, offset + limit),
+    total: ranked.length,
+    limit,
+    offset,
+  };
 }

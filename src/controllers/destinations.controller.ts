@@ -1,11 +1,13 @@
 import { Request, Response } from 'express';
 import { getAllDestinations, getDestinationById, createDestination, deleteDestination } from '../services/destinations.service';
 import { AuthenticatedRequest } from '../middleware/auth.middleware';
+import { ListDestinationsQuery } from '../schemas/destinations.schema';
 
 export async function listDestinations(req: Request, res: Response) {
   try {
-    const destinations = await getAllDestinations();
-    res.json(destinations);
+    const { limit, offset, country } = (req as Request & { validatedQuery: ListDestinationsQuery }).validatedQuery;
+    const result = await getAllDestinations({ limit, offset, country });
+    res.json(result);
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Failed to fetch destinations' });

@@ -1,10 +1,12 @@
 import { Response } from 'express';
 import { AuthenticatedRequest } from '../middleware/auth.middleware';
 import { getRecommendationsForUser } from '../services/recommendation.service';
+import { ListRecommendationsQuery } from '../schemas/recommendation.schema';
 
 export async function getRecommendations(req: AuthenticatedRequest, res: Response) {
   try {
-    const recommendations = await getRecommendationsForUser(req.userId!);
+    const { limit, offset } = (req as AuthenticatedRequest & { validatedQuery: ListRecommendationsQuery }).validatedQuery;
+    const recommendations = await getRecommendationsForUser(req.userId!, limit, offset);
     res.json(recommendations);
   } catch (error: any) {
     if (error.message === 'NO_PREFERENCES') {

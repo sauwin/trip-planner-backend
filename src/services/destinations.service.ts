@@ -1,8 +1,26 @@
 import { prisma } from '../lib/prisma';
 import { Prisma } from '../generated/prisma/client';
 
-export async function getAllDestinations() {
-  return prisma.destination.findMany();
+export interface ListDestinationsParams {
+  limit: number;
+  offset: number;
+  country?: string;
+}
+
+export async function getAllDestinations({ limit, offset, country }: ListDestinationsParams) {
+  const where = country ? { country } : undefined;
+
+  const [items, total] = await Promise.all([
+    prisma.destination.findMany({
+      where,
+      take: limit,
+      skip: offset,
+      orderBy: { popularityScore: 'desc' },
+    }),
+    prisma.destination.count({ where }),
+  ]);
+
+  return { items, total, limit, offset };
 }
 
 export async function getDestinationById(id: string) {

@@ -4,10 +4,6 @@ import { registerUser, loginUser, refreshTokens, logoutUser } from '../services/
 export async function register(req: Request, res: Response) {
   try {
     const { email, password } = req.body;
-    if (!email || !password) {
-      res.status(400).json({ error: 'Email and password are required' });
-      return;
-    }
 
     const tokens = await registerUser(email, password);
     res.status(201).json(tokens);
@@ -24,10 +20,6 @@ export async function register(req: Request, res: Response) {
 export async function login(req: Request, res: Response) {
   try {
     const { email, password } = req.body;
-    if (!email || !password) {
-      res.status(400).json({ error: 'Email and password are required' });
-      return;
-    }
 
     const tokens = await loginUser(email, password);
     res.json(tokens);

@@ -11,3 +11,11 @@ export const createDestinationSchema = z.object({
 export const deleteDestinationSchema = z.object({
   id: z.string().uuid('id must be a valid UUID'),
 });
+
+export const listDestinationsQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(100).optional().default(20),
+  offset: z.coerce.number().int().min(0).optional().default(0),
+  country: z.string().min(1).optional(),
+});
+
+export type ListDestinationsQuery = z.infer<typeof listDestinationsQuerySchema>;
