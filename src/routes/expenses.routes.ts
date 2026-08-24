@@ -6,8 +6,8 @@ import { createExpenseHandler, listExpensesHandler, deleteExpenseHandler } from 
 
 const router = Router({ mergeParams: true });
 
-router.post('/', requireAuth, validateBody(createExpenseSchema), createExpenseHandler);
 router.get('/', requireAuth, listExpensesHandler);
+router.post('/', requireAuth, validateBody(createExpenseSchema), createExpenseHandler);
 router.delete('/:expenseId', requireAuth, deleteExpenseHandler);
 
 export default router;

@@ -1,6 +1,6 @@
 import { Response } from 'express';
 import { AuthenticatedRequest } from '../middleware/auth.middleware';
-import { createTrip, getUserTrips, getTripById, addDestinationToTrip, deleteTrip, updateAccommodation } from '../services/trips.service';
+import { createTrip, getUserTrips, getTripById, addDestinationToTrip, deleteTrip, updateAccommodation, deleteDestinationFromTrip, updateTrip } from '../services/trips.service';
 
 function getParamId(value: string | string[]) {
   const id = Array.isArray(value) ? value[0] : value;
@@ -117,5 +117,37 @@ export async function deleteTripHandler(req: AuthenticatedRequest, res: Response
     }
     console.error(error);
     res.status(500).json({ error: 'Failed to delete trip' });
+  }
+}
+
+export async function deleteDestinationHandler(req: AuthenticatedRequest, res: Response) {
+  try {
+    const tripId = getParamId(req.params.id);
+    const destId = getParamId(req.params.destinationId);
+    await deleteDestinationFromTrip(req.userId!, tripId, destId);
+    res.status(204).send();
+  } catch (error: any) {
+    if (error.message === 'TRIP_NOT_FOUND') {
+      res.status(404).json({ error: 'Trip not found' });
+      return;
+    }
+    if (error.message === 'DESTINATION_NOT_FOUND') {
+      res.status(404).json({ error: 'Destination not found' });
+      return;
+    }
+    console.error(error);
+    res.status(500).json({ error: 'Failed to delete destination from trip' });
+  }
+}
+
+export async function updateTripHandler(req: AuthenticatedRequest, res: Response) {
+  try {
+    const tripId = getParamId(req.params.id);
+    const { title, budgetTotal, peopleCount, startDate, endDate } = req.body;
+    const updatedTrip = await updateTrip(req.userId!, tripId, { title, budgetTotal, peopleCount, startDate, endDate });
+    res.json(updatedTrip);
+  } catch (error: any) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to update trip' });
   }
 }

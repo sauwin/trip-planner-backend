@@ -94,3 +94,23 @@ export async function updateAccommodation(
     data: accommodation,
   });
 }
+
+export async function deleteDestinationFromTrip(userId: string, tripId: string, destinationId: string) {
+  const trip = await prisma.trip.findFirst({ where: { id: tripId, userId } });
+  if (!trip) {
+    throw new Error('TRIP_NOT_FOUND');
+  }
+
+  return prisma.tripDestination.delete({
+    where: { tripId_destinationId: { tripId, destinationId } },
+  });
+}
+
+export async function updateTrip(userId: string, tripId: string, data: Partial<{ title: string; budgetTotal: number; peopleCount: number; startDate: string; endDate: string }>) {
+  const trip = await prisma.trip.findFirst({ where: {id: tripId, userId } });
+  if (!trip) {
+    throw new Error('TRIP_NOT_FOUND');
+  }
+
+  return prisma.trip.update({ where: { id: tripId, userId }, data: data } )
+}
