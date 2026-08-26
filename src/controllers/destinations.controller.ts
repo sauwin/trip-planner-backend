@@ -5,8 +5,8 @@ import { ListDestinationsQuery } from '../schemas/destinations.schema';
 
 export async function listDestinations(req: Request, res: Response) {
   try {
-    const { limit, offset, country } = (req as Request & { validatedQuery: ListDestinationsQuery }).validatedQuery;
-    const result = await getAllDestinations({ limit, offset, country });
+    const { limit, offset, country, featureIds } = (req as Request & { validatedQuery: ListDestinationsQuery }).validatedQuery;
+    const result = await getAllDestinations({ limit, offset, country, featureIds });
     res.json(result);
   } catch (error) {
     console.error(error);

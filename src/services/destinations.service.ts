@@ -5,10 +5,16 @@ export interface ListDestinationsParams {
   limit: number;
   offset: number;
   country?: string;
+  featureIds?: string[];
 }
 
-export async function getAllDestinations({ limit, offset, country }: ListDestinationsParams) {
-  const where = country ? { country } : undefined;
+export async function getAllDestinations({ limit, offset, country, featureIds }: ListDestinationsParams) {
+  const conditions: Prisma.DestinationWhereInput[] = [];
+  if (country) conditions.push({ country });
+  if (featureIds && featureIds.length > 0) {
+    conditions.push(...featureIds.map((featureId) => ({ features: { some: { featureId } } })));
+  }
+  const where = conditions.length > 0 ? { AND: conditions } : undefined;
 
   const [items, total] = await Promise.all([
     prisma.destination.findMany({

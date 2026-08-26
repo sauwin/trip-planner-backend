@@ -23,7 +23,8 @@ export interface PaginatedRecommendations {
 export async function getRecommendationsForUser(
   userId: string,
   limit: number = 10,
-  offset: number = 0
+  offset: number = 0,
+  featureIds?: string[]
 ): Promise<PaginatedRecommendations> {
   const preferences = await prisma.userPreference.findMany({
     where: { userId },
@@ -38,7 +39,14 @@ export async function getRecommendationsForUser(
     include: { features: true },
   });
 
-  const results = destinations.map((destination) => {
+  const filteredDestinations =
+    featureIds && featureIds.length > 0
+      ? destinations.filter((destination) =>
+          featureIds.every((featureId) => destination.features.some((f) => f.featureId === featureId))
+        )
+      : destinations;
+
+  const results = filteredDestinations.map((destination) => {
     let score = 0;
     let maxScore = 0;
 

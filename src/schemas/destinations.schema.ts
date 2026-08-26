@@ -12,10 +12,23 @@ export const deleteDestinationSchema = z.object({
   id: z.string().uuid('id must be a valid UUID'),
 });
 
+const featureIdsSchema = z
+  .string()
+  .optional()
+  .transform((val) => {
+    if (!val) return undefined;
+    const arr = val
+      .split(',')
+      .map((v) => v.trim())
+      .filter((v) => v.length > 0);
+    return arr.length > 0 ? arr : undefined;
+  });
+
 export const listDestinationsQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).optional().default(20),
   offset: z.coerce.number().int().min(0).optional().default(0),
   country: z.string().min(1).optional(),
+  featureIds: featureIdsSchema,
 });
 
 export type ListDestinationsQuery = z.infer<typeof listDestinationsQuerySchema>;
