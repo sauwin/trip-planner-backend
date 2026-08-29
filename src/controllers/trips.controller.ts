@@ -1,6 +1,6 @@
 import { Response } from 'express';
 import { AuthenticatedRequest } from '../middleware/auth.middleware';
-import { createTrip, getUserTrips, getTripById, addDestinationToTrip, deleteTrip, updateAccommodation, deleteDestinationFromTrip, updateTrip } from '../services/trips.service';
+import { createTrip, getUserTrips, getTripById, addDestinationToTrip, deleteTrip, updateTripDestinationDetails, deleteDestinationFromTrip, updateTrip } from '../services/trips.service';
 
 function getParamId(value: string | string[]) {
   const id = Array.isArray(value) ? value[0] : value;
@@ -54,9 +54,11 @@ export async function getTripHandler(req: AuthenticatedRequest, res: Response) {
 
 export async function addDestinationHandler(req: AuthenticatedRequest, res: Response) {
   try {
-    const { destinationId, plannedDate, accommodationName, accommodationPrice, accommodationUrl } = req.body;
+    const { destinationId, plannedDateStart, plannedDateEnd, accommodationName, accommodationPrice, accommodationUrl } = req.body;
     const tripId = getParamId(req.params.id);
-    const result = await addDestinationToTrip(req.userId!, tripId, destinationId, plannedDate, {
+    const result = await addDestinationToTrip(req.userId!, tripId, destinationId, {
+      plannedDateStart,
+      plannedDateEnd,
       accommodationName,
       accommodationPrice,
       accommodationUrl,
@@ -80,15 +82,17 @@ export async function addDestinationHandler(req: AuthenticatedRequest, res: Resp
   }
 }
 
-export async function updateAccommodationHandler(req: AuthenticatedRequest, res: Response) {
+export async function updateTripDestinationDetailsHandler(req: AuthenticatedRequest, res: Response) {
   try {
-    const { accommodationName, accommodationPrice, accommodationUrl } = req.body;
+    const { accommodationName, accommodationPrice, accommodationUrl, plannedDateStart, plannedDateEnd } = req.body;
     const tripId = getParamId(req.params.id);
     const destId = getParamId(req.params.destinationId);
-    const result = await updateAccommodation(req.userId!, tripId, destId, {
+    const result = await updateTripDestinationDetails(req.userId!, tripId, destId, {
       accommodationName,
       accommodationPrice,
       accommodationUrl,
+      plannedDateStart,
+      plannedDateEnd,
     });
     res.json(result);
   } catch (error: any) {
@@ -97,7 +101,7 @@ export async function updateAccommodationHandler(req: AuthenticatedRequest, res:
       return;
     }
     console.error(error);
-    res.status(500).json({ error: 'Failed to update accommodation' });
+    res.status(500).json({ error: 'Failed to update trip destination details' });
   }
 }
 

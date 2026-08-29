@@ -1,9 +1,23 @@
 import { prisma } from '../lib/prisma';
 
-interface AccommodationInput {
+interface TripDestinationDetailsInput {
   accommodationName?: string;
   accommodationPrice?: number;
   accommodationUrl?: string;
+  plannedDateStart?: string;
+  plannedDateEnd?: string;
+}
+
+function normalizeDetails(details?: TripDestinationDetailsInput) {
+  if (!details) return {};
+
+  const { plannedDateStart, plannedDateEnd, ...rest } = details;
+
+  return {
+    ...rest,
+    plannedDateStart: plannedDateStart !== undefined ? (plannedDateStart ? new Date(plannedDateStart) : null) : undefined,
+    plannedDateEnd: plannedDateEnd !== undefined ? (plannedDateEnd ? new Date(plannedDateEnd) : null) : undefined,
+  };
 }
 
 export async function createTrip(
@@ -57,8 +71,7 @@ export async function addDestinationToTrip(
   userId: string,
   tripId: string,
   destinationId: string,
-  plannedDate?: string,
-  accommodation?: AccommodationInput,
+  details?: TripDestinationDetailsInput,
 ) {
   const trip = await prisma.trip.findFirst({ where: { id: tripId, userId } });
   if (!trip) {
@@ -72,17 +85,16 @@ export async function addDestinationToTrip(
       tripId,
       destinationId,
       position: lastPosition,
-      plannedDate: plannedDate ? new Date(plannedDate) : null,
-      ...accommodation,
+      ...normalizeDetails(details),
     },
   });
 }
 
-export async function updateAccommodation(
+export async function updateTripDestinationDetails(
   userId: string,
   tripId: string,
   destinationId: string,
-  accommodation: AccommodationInput,
+  details: TripDestinationDetailsInput,
 ) {
   const trip = await prisma.trip.findFirst({ where: { id: tripId, userId } });
   if (!trip) {
@@ -91,7 +103,7 @@ export async function updateAccommodation(
 
   return prisma.tripDestination.update({
     where: { tripId_destinationId: { tripId, destinationId } },
-    data: accommodation,
+    data: normalizeDetails(details),
   });
 }
 
@@ -106,11 +118,24 @@ export async function deleteDestinationFromTrip(userId: string, tripId: string, 
   });
 }
 
-export async function updateTrip(userId: string, tripId: string, data: Partial<{ title: string; budgetTotal: number; peopleCount: number; startDate: string; endDate: string }>) {
-  const trip = await prisma.trip.findFirst({ where: {id: tripId, userId } });
+export async function updateTrip(
+  userId: string,
+  tripId: string,
+  data: Partial<{ title: string; budgetTotal: number; peopleCount: number; startDate: string; endDate: string }>,
+) {
+  const trip = await prisma.trip.findFirst({ where: { id: tripId, userId } });
   if (!trip) {
     throw new Error('TRIP_NOT_FOUND');
   }
 
-  return prisma.trip.update({ where: { id: tripId, userId }, data: data } )
+  const { startDate, endDate, ...rest } = data;
+
+  return prisma.trip.update({
+    where: { id: tripId },
+    data: {
+      ...rest,
+      startDate: startDate ? new Date(startDate) : undefined,
+      endDate: endDate ? new Date(endDate) : undefined,
+    },
+  });
 }

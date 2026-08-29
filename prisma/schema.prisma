@@ -111,7 +111,8 @@ model TripDestination {
   tripId              String
   destinationId       String
   position            Int
-  plannedDate         DateTime?
+  plannedDateStart    DateTime?
+  plannedDateEnd      DateTime?
   accommodationName   String?
   accommodationPrice  Float?
   accommodationUrl    String?
