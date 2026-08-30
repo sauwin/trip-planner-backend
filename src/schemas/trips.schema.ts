@@ -32,7 +32,7 @@ export const addDestinationSchema = z
     plannedDateStart: z.string().datetime().optional(),
     plannedDateEnd: z.string().datetime().optional(),
     accommodationName: z.string().min(1).optional(),
-    accommodationPrice: z.number().positive('accommodationPrice must be positive').optional(),
+    accommodationPrice: z.number().nonnegative('accommodationPrice cannot be negative').optional(),
     accommodationUrl: z.string().url('accommodationUrl must be a valid URL').optional(),
   })
   .refine(
@@ -43,7 +43,7 @@ export const addDestinationSchema = z
 export const updateTripDestinationDetailsSchema = z
   .object({
     accommodationName: z.string().min(1).optional().nullable(),
-    accommodationPrice: z.number().positive('accommodationPrice must be positive').optional().nullable(),
+    accommodationPrice: z.number().nonnegative('accommodationPrice cannot be negative').optional().nullable(),
     accommodationUrl: z.string().url('accommodationUrl must be a valid URL').optional().nullable(),
     plannedDateStart: z.string().datetime().optional().nullable(),
     plannedDateEnd: z.string().datetime().optional().nullable(),

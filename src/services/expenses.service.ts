@@ -36,3 +36,20 @@ export async function deleteExpense(userId: string, tripId: string, expenseId: s
 
   return prisma.expense.delete({ where: { id: expenseId, tripId } });
 }
+
+export async function updateExpense(
+  userId: string,
+  tripId: string,
+  expenseId: string,
+  data: { description?: string; amount?: number },
+) {
+  const trip = await prisma.trip.findFirst({ where: { id: tripId, userId } });
+  if (!trip) {
+    throw new Error('TRIP_NOT_FOUND');
+  }
+
+  return prisma.expense.update({
+    where: { id: expenseId, tripId },
+    data,
+  });
+}
