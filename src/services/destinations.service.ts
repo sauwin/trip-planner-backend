@@ -34,7 +34,7 @@ export async function getDestinationById(id: string) {
     where: { id },
     include: {
       features: {
-        include: { feature: true },
+        include: { feature: { include: { category: true } } },
       },
     },
   });

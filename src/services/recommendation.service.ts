@@ -1,5 +1,12 @@
 import { prisma } from '../lib/prisma';
 
+interface DestinationFeatureView {
+  featureId: string;
+  key: string;
+  categoryKey: string;
+  weight: number;
+}
+
 interface DestinationScore {
   destination: {
     id: string;
@@ -9,6 +16,7 @@ interface DestinationScore {
     longitude: number;
     translations: unknown;
     popularityScore: number;
+    features: DestinationFeatureView[];
   };
   score: number;
 }
@@ -36,7 +44,7 @@ export async function getRecommendationsForUser(
   }
 
   const destinations = await prisma.destination.findMany({
-    include: { features: true },
+    include: { features: { include: { feature: { include: { category: true } } } } },
   });
 
   const filteredDestinations =
@@ -63,7 +71,14 @@ export async function getRecommendationsForUser(
     const normalizedScore = maxScore > 0 ? Math.round((score / maxScore) * 100) : 0;
 
     const { features, ...destinationData } = destination;
-    return { destination: destinationData, score: normalizedScore };
+    const featureViews: DestinationFeatureView[] = features.map((f) => ({
+      featureId: f.featureId,
+      key: f.feature.key,
+      categoryKey: f.feature.category.key,
+      weight: f.weight,
+    }));
+
+    return { destination: { ...destinationData, features: featureViews }, score: normalizedScore };
   });
 
   const ranked = results
