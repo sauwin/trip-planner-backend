@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { requireAuth } from '../middleware/auth.middleware';
 import { validateBody } from '../middleware/validate';
 import { createExpenseSchema, updateExpenseSchema } from '../schemas/expenses.schema';
-import { createExpenseHandler, listExpensesHandler, deleteExpenseHandler, updateExpenseHandler } from '../controllers/expenses.controller';
+import { createExpenseHandler, listExpensesHandler, updateExpenseHandler, deleteExpenseHandler } from '../controllers/expenses.controller';
 
 const router = Router({ mergeParams: true });
 

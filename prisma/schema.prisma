@@ -151,13 +151,21 @@ model UserPreference {
   @@unique([userId, categoryId])
 }
 
+enum ExpenseCategory {
+  TRANSPORT
+  FOOD
+  ACTIVITIES
+  OTHER
+}
+
 model Expense {
-  id          String   @id @default(uuid())
+  id          String          @id @default(uuid())
   tripId      String
   description String
   amount      Float
-  date        DateTime @default(now())
-  createdAt   DateTime @default(now())
+  category    ExpenseCategory @default(OTHER)
+  date        DateTime        @default(now())
+  createdAt   DateTime        @default(now())
 
   trip Trip @relation(fields: [tripId], references: [id], onDelete: Cascade)
 

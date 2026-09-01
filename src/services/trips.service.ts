@@ -44,6 +44,14 @@ export async function getUserTrips(userId: string) {
   return prisma.trip.findMany({
     where: { userId },
     orderBy: { createdAt: 'desc' },
+    include: {
+      destinations: {
+        select: { accommodationPrice: true, plannedDateStart: true, plannedDateEnd: true },
+      },
+      expenses: {
+        select: { amount: true, category: true, date: true },
+      },
+    },
   });
 }
 
