@@ -12,6 +12,11 @@ const FEATURES_INCLUDE = {
   features: { include: { feature: { include: { category: true } } } },
 } satisfies Prisma.DestinationInclude;
 
+const DETAIL_INCLUDE = {
+  ...FEATURES_INCLUDE,
+  pointsOfInterest: { orderBy: { name: 'asc' } },
+} satisfies Prisma.DestinationInclude;
+
 type DestinationWithRawFeatures = Prisma.DestinationGetPayload<{ include: typeof FEATURES_INCLUDE }>;
 
 function withLeanFeatures<T extends DestinationWithRawFeatures>(destination: T) {
@@ -52,7 +57,7 @@ export async function getAllDestinations({ limit, offset, country, featureIds }:
 export async function getDestinationById(id: string) {
   const destination = await prisma.destination.findUnique({
     where: { id },
-    include: FEATURES_INCLUDE,
+    include: DETAIL_INCLUDE,
   });
 
   return destination ? withLeanFeatures(destination) : null;

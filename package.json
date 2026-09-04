@@ -7,7 +7,8 @@
     "dev": "ts-node-dev --respawn src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
-    "db:seed": "tsx prisma/seed.ts"
+    "db:seed": "tsx prisma/seed.ts",
+    "poi:fetch": "tsx scripts/fetch-poi.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

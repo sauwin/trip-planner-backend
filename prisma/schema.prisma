@@ -35,6 +35,32 @@ model Destination {
   features         DestinationFeature[]
   interactions     Interaction[]
   tripDestinations TripDestination[]
+  pointsOfInterest PointOfInterest[]
+}
+
+enum PoiCategory {
+  ATTRACTION
+  MUSEUM
+  VIEWPOINT
+  RESTAURANT
+  CAFE
+  PARK
+  HOTEL
+  OTHER
+}
+
+model PointOfInterest {
+  id            String      @id @default(uuid())
+  destinationId String
+  name          String
+  category      PoiCategory
+  latitude      Float
+  longitude     Float
+  createdAt     DateTime    @default(now())
+
+  destination Destination @relation(fields: [destinationId], references: [id], onDelete: Cascade)
+
+  @@index([destinationId])
 }
 
 model FeatureCategory {
