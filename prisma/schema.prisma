@@ -7,10 +7,16 @@ datasource db {
   provider = "postgresql"
 }
 
+enum UserRole {
+  USER
+  ADMIN
+}
+
 model User {
   id           String   @id @default(uuid())
   email        String   @unique
   passwordHash String
+  role         UserRole @default(USER)
   country      String?
   ageRange     String?
   createdAt    DateTime @default(now())

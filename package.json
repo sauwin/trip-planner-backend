@@ -8,7 +8,8 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "db:seed": "tsx prisma/seed.ts",
-    "poi:fetch": "tsx scripts/fetch-poi.ts"
+    "poi:fetch": "tsx scripts/fetch-poi.ts",
+    "admin:promote": "tsx scripts/promote-admin.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
