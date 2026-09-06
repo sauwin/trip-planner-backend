@@ -151,6 +151,10 @@ export async function updateTripHandler(req: AuthenticatedRequest, res: Response
     const updatedTrip = await updateTrip(req.userId!, tripId, { title, budgetTotal, peopleCount, startDate, endDate });
     res.json(updatedTrip);
   } catch (error: any) {
+    if (error.message === 'TRIP_NOT_FOUND') {
+      res.status(404).json({ error: 'Trip not found' });
+      return;
+    }
     console.error(error);
     res.status(500).json({ error: 'Failed to update trip' });
   }
