@@ -24,7 +24,7 @@ export async function removeInteraction(userId: string, destinationId: string, t
 export async function getUserInteractions(userId: string) {
   return prisma.interaction.findMany({
     where: { userId },
-    include: { destination: { select: { slug: true, translations: true } } },
+    include: { destination: { select: { slug: true, country: true, translations: true } } },
     orderBy: { createdAt: 'desc' },
   });
 }
