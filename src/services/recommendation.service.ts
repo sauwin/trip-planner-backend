@@ -68,7 +68,7 @@ export async function getRecommendationsForUser(
       score += categoryWeight * matchWeight;
     }
 
-    const normalizedScore = maxScore > 0 ? Math.round((score / maxScore) * 100) : 0;
+    const normalizedScore = maxScore > 0 ? Math.max(0, Math.min(100, Math.round((score / maxScore) * 100))) : 0;
 
     const { features, ...destinationData } = destination;
     const featureViews: DestinationFeatureView[] = features.map((f) => ({
