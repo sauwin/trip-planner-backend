@@ -1,4 +1,5 @@
 import { prisma } from '../lib/prisma';
+import { assertTripOwnership } from '../lib/tripOwnership';
 
 interface TripDestinationDetailsInput {
   accommodationName?: string;
@@ -68,10 +69,7 @@ export async function getTripById(userId: string, tripId: string) {
 }
 
 export async function deleteTrip(userId: string, tripId: string) {
-  const trip = await prisma.trip.findFirst({ where: { id: tripId, userId } });
-  if (!trip) {
-    throw new Error('TRIP_NOT_FOUND');
-  }
+  await assertTripOwnership(userId, tripId);
   return prisma.trip.delete({ where: { id: tripId } });
 }
 
@@ -81,10 +79,7 @@ export async function addDestinationToTrip(
   destinationId: string,
   details?: TripDestinationDetailsInput,
 ) {
-  const trip = await prisma.trip.findFirst({ where: { id: tripId, userId } });
-  if (!trip) {
-    throw new Error('TRIP_NOT_FOUND');
-  }
+  await assertTripOwnership(userId, tripId);
 
   const lastPosition = await prisma.tripDestination.count({ where: { tripId } });
 
@@ -104,10 +99,7 @@ export async function updateTripDestinationDetails(
   destinationId: string,
   details: TripDestinationDetailsInput,
 ) {
-  const trip = await prisma.trip.findFirst({ where: { id: tripId, userId } });
-  if (!trip) {
-    throw new Error('TRIP_NOT_FOUND');
-  }
+  await assertTripOwnership(userId, tripId);
 
   return prisma.tripDestination.update({
     where: { tripId_destinationId: { tripId, destinationId } },
@@ -116,10 +108,7 @@ export async function updateTripDestinationDetails(
 }
 
 export async function deleteDestinationFromTrip(userId: string, tripId: string, destinationId: string) {
-  const trip = await prisma.trip.findFirst({ where: { id: tripId, userId } });
-  if (!trip) {
-    throw new Error('TRIP_NOT_FOUND');
-  }
+  await assertTripOwnership(userId, tripId);
 
   return prisma.tripDestination.delete({
     where: { tripId_destinationId: { tripId, destinationId } },
@@ -131,10 +120,7 @@ export async function updateTrip(
   tripId: string,
   data: Partial<{ title: string; budgetTotal: number; peopleCount: number; startDate: string; endDate: string }>,
 ) {
-  const trip = await prisma.trip.findFirst({ where: { id: tripId, userId } });
-  if (!trip) {
-    throw new Error('TRIP_NOT_FOUND');
-  }
+  await assertTripOwnership(userId, tripId);
 
   const { startDate, endDate, ...rest } = data;
 
