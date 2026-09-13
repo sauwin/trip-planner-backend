@@ -101,6 +101,22 @@ export async function updateTripDestinationDetails(
 ) {
   await assertTripOwnership(userId, tripId);
 
+  const existing = await prisma.tripDestination.findUnique({
+    where: { tripId_destinationId: { tripId, destinationId } },
+    select: { plannedDateStart: true, plannedDateEnd: true },
+  });
+  if (!existing) throw new Error('DESTINATION_NOT_FOUND');
+
+  const plannedDateStart = details.plannedDateStart === undefined
+    ? existing.plannedDateStart
+    : details.plannedDateStart ? new Date(details.plannedDateStart) : null;
+  const plannedDateEnd = details.plannedDateEnd === undefined
+    ? existing.plannedDateEnd
+    : details.plannedDateEnd ? new Date(details.plannedDateEnd) : null;
+  if (plannedDateStart && plannedDateEnd && plannedDateEnd < plannedDateStart) {
+    throw new Error('INVALID_DATE_RANGE');
+  }
+
   return prisma.tripDestination.update({
     where: { tripId_destinationId: { tripId, destinationId } },
     data: normalizeDetails(details),
@@ -110,9 +126,9 @@ export async function updateTripDestinationDetails(
 export async function deleteDestinationFromTrip(userId: string, tripId: string, destinationId: string) {
   await assertTripOwnership(userId, tripId);
 
-  return prisma.tripDestination.delete({
-    where: { tripId_destinationId: { tripId, destinationId } },
-  });
+  const deleted = await prisma.tripDestination.deleteMany({ where: { tripId, destinationId } });
+  if (deleted.count === 0) throw new Error('DESTINATION_NOT_FOUND');
+  return deleted;
 }
 
 export async function updateTrip(
@@ -123,13 +139,24 @@ export async function updateTrip(
   await assertTripOwnership(userId, tripId);
 
   const { startDate, endDate, ...rest } = data;
+  const existing = await prisma.trip.findUnique({
+    where: { id: tripId },
+    select: { startDate: true, endDate: true },
+  });
+  if (!existing) throw new Error('TRIP_NOT_FOUND');
+
+  const nextStartDate = startDate === undefined ? existing.startDate : startDate ? new Date(startDate) : null;
+  const nextEndDate = endDate === undefined ? existing.endDate : endDate ? new Date(endDate) : null;
+  if (nextStartDate && nextEndDate && nextEndDate < nextStartDate) {
+    throw new Error('INVALID_DATE_RANGE');
+  }
 
   return prisma.trip.update({
     where: { id: tripId },
     data: {
       ...rest,
-      startDate: startDate ? new Date(startDate) : undefined,
-      endDate: endDate ? new Date(endDate) : undefined,
+      startDate: startDate === undefined ? undefined : nextStartDate,
+      endDate: endDate === undefined ? undefined : nextEndDate,
     },
   });
 }

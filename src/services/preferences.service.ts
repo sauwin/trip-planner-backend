@@ -6,6 +6,11 @@ interface PreferenceInput {
 }
 
 export async function saveUserPreferences(userId: string, preferences: PreferenceInput[]) {
+  const categoryIds = preferences.map(({ categoryId }) => categoryId);
+  if (new Set(categoryIds).size !== categoryIds.length) {
+    throw new Error('INVALID_PREFERENCES');
+  }
+
   const user = await prisma.user.findUnique({ where: { id: userId }, select: { id: true } });
   if (!user) {
     throw new Error('USER_NOT_FOUND');
@@ -21,7 +26,7 @@ export async function saveUserPreferences(userId: string, preferences: Preferenc
     throw new Error('INVALID_PREFERENCES');
   }
 
-  const results = await Promise.all(
+  const results = await prisma.$transaction(
     preferences.map(({ categoryId, featureId }) =>
       prisma.userPreference.upsert({
         where: { userId_categoryId: { userId, categoryId } },

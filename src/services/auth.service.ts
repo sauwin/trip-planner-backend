@@ -43,10 +43,14 @@ export async function refreshTokens(refreshToken: string) {
     throw new Error('INVALID_REFRESH_TOKEN');
   }
 
-  await prisma.refreshToken.update({
-    where: { id: stored.id },
+  const revoked = await prisma.refreshToken.updateMany({
+    where: { id: stored.id, revoked: false, expiresAt: { gt: new Date() } },
     data: { revoked: true },
   });
+
+  if (revoked.count !== 1) {
+    throw new Error('INVALID_REFRESH_TOKEN');
+  }
 
   return issueTokenPair(payload.sub);
 }

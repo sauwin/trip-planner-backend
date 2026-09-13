@@ -44,7 +44,16 @@ export async function getRecommendationsForUser(
   }
 
   const destinations = await prisma.destination.findMany({
-    include: { features: { include: { feature: { include: { category: true } } } } },
+    select: {
+      id: true,
+      slug: true,
+      country: true,
+      latitude: true,
+      longitude: true,
+      translations: true,
+      popularityScore: true,
+      features: { include: { feature: { include: { category: true } } } },
+    },
   });
 
   const filteredDestinations =

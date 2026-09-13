@@ -100,6 +100,14 @@ export async function updateTripDestinationDetailsHandler(req: AuthenticatedRequ
       res.status(404).json({ error: 'Trip not found' });
       return;
     }
+    if (error.message === 'DESTINATION_NOT_FOUND') {
+      res.status(404).json({ error: 'Destination is not in this trip' });
+      return;
+    }
+    if (error.message === 'INVALID_DATE_RANGE') {
+      res.status(400).json({ error: 'plannedDateEnd must be on or after plannedDateStart' });
+      return;
+    }
     console.error(error);
     res.status(500).json({ error: 'Failed to update trip destination details' });
   }
@@ -153,6 +161,10 @@ export async function updateTripHandler(req: AuthenticatedRequest, res: Response
   } catch (error: any) {
     if (error.message === 'TRIP_NOT_FOUND') {
       res.status(404).json({ error: 'Trip not found' });
+      return;
+    }
+    if (error.message === 'INVALID_DATE_RANGE') {
+      res.status(400).json({ error: 'endDate must be on or after startDate' });
       return;
     }
     console.error(error);

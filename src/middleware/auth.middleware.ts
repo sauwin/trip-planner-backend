@@ -18,6 +18,9 @@ export function requireAuth(req: AuthenticatedRequest, res: Response, next: Next
 
   try {
     const payload = verifyAccessToken(token);
+    if (!payload || typeof payload.sub !== 'string' || payload.sub.length === 0) {
+      throw new Error('Invalid token subject');
+    }
     req.userId = payload.sub;
     next();
   } catch {
