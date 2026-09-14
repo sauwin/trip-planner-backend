@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import { AuthenticatedRequest } from '../middleware/auth.middleware';
 import { createTrip, getUserTrips, getTripById, addDestinationToTrip, deleteTrip, updateTripDestinationDetails, deleteDestinationFromTrip, updateTrip } from '../services/trips.service';
+import { handleServiceError } from '../lib/serviceErrors';
 
 function getParamId(value: string | string[]) {
   const id = Array.isArray(value) ? value[0] : value;
@@ -12,14 +13,15 @@ function getParamId(value: string | string[]) {
   return id;
 }
 
+const TRIP_NOT_FOUND = { TRIP_NOT_FOUND: { status: 404, message: 'Trip not found' } };
+
 export async function createTripHandler(req: AuthenticatedRequest, res: Response) {
   try {
     const { title, budgetTotal, peopleCount, startDate, endDate } = req.body;
     const trip = await createTrip(req.userId!, title, budgetTotal, peopleCount, startDate, endDate);
     res.status(201).json(trip);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Failed to create trip' });
+    handleServiceError(error, res, 'Failed to create trip');
   }
 }
 
@@ -28,8 +30,7 @@ export async function listTripsHandler(req: AuthenticatedRequest, res: Response)
     const trips = await getUserTrips(req.userId!);
     res.json(trips);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Failed to fetch trips' });
+    handleServiceError(error, res, 'Failed to fetch trips');
   }
 }
 
@@ -43,12 +44,9 @@ export async function getTripHandler(req: AuthenticatedRequest, res: Response) {
     }
     res.json(trip);
   } catch (error) {
-    if (error instanceof Error && error.message === 'INVALID_TRIP_ID') {
-      res.status(400).json({ error: 'Trip id is required' });
-      return;
-    }
-    console.error(error);
-    res.status(500).json({ error: 'Failed to fetch trip' });
+    handleServiceError(error, res, 'Failed to fetch trip', {
+      INVALID_TRIP_ID: { status: 400, message: 'Trip id is required' },
+    });
   }
 }
 
@@ -64,21 +62,12 @@ export async function addDestinationHandler(req: AuthenticatedRequest, res: Resp
       accommodationUrl,
     });
     res.status(201).json(result);
-  } catch (error: any) {
-    if (error.message === 'TRIP_NOT_FOUND') {
-      res.status(404).json({ error: 'Trip not found' });
-      return;
-    }
-    if (error.code === 'P2003') {
-      res.status(404).json({ error: 'Destination not found' });
-      return;
-    }
-    if (error.code === 'P2002') {
-      res.status(409).json({ error: 'Destination already in this trip' });
-      return;
-    }
-    console.error(error);
-    res.status(500).json({ error: 'Failed to add destination to trip' });
+  } catch (error) {
+    handleServiceError(error, res, 'Failed to add destination to trip', {
+      ...TRIP_NOT_FOUND,
+      P2003: { status: 404, message: 'Destination not found' },
+      P2002: { status: 409, message: 'Destination already in this trip' },
+    });
   }
 }
 
@@ -95,21 +84,8 @@ export async function updateTripDestinationDetailsHandler(req: AuthenticatedRequ
       plannedDateEnd,
     });
     res.json(result);
-  } catch (error: any) {
-    if (error.message === 'TRIP_NOT_FOUND') {
-      res.status(404).json({ error: 'Trip not found' });
-      return;
-    }
-    if (error.message === 'DESTINATION_NOT_FOUND') {
-      res.status(404).json({ error: 'Destination is not in this trip' });
-      return;
-    }
-    if (error.message === 'INVALID_DATE_RANGE') {
-      res.status(400).json({ error: 'plannedDateEnd must be on or after plannedDateStart' });
-      return;
-    }
-    console.error(error);
-    res.status(500).json({ error: 'Failed to update trip destination details' });
+  } catch (error) {
+    handleServiceError(error, res, 'Failed to update trip destination details', TRIP_NOT_FOUND);
   }
 }
 
@@ -118,17 +94,11 @@ export async function deleteTripHandler(req: AuthenticatedRequest, res: Response
     const tripId = getParamId(req.params.id);
     await deleteTrip(req.userId!, tripId);
     res.status(204).send();
-  } catch (error: any) {
-    if (error instanceof Error && error.message === 'INVALID_TRIP_ID') {
-      res.status(400).json({ error: 'Trip id is required' });
-      return;
-    }
-    if (error.message === 'TRIP_NOT_FOUND') {
-      res.status(404).json({ error: 'Trip not found' });
-      return;
-    }
-    console.error(error);
-    res.status(500).json({ error: 'Failed to delete trip' });
+  } catch (error) {
+    handleServiceError(error, res, 'Failed to delete trip', {
+      INVALID_TRIP_ID: { status: 400, message: 'Trip id is required' },
+      ...TRIP_NOT_FOUND,
+    });
   }
 }
 
@@ -138,17 +108,11 @@ export async function deleteDestinationHandler(req: AuthenticatedRequest, res: R
     const destId = getParamId(req.params.destinationId);
     await deleteDestinationFromTrip(req.userId!, tripId, destId);
     res.status(204).send();
-  } catch (error: any) {
-    if (error.message === 'TRIP_NOT_FOUND') {
-      res.status(404).json({ error: 'Trip not found' });
-      return;
-    }
-    if (error.message === 'DESTINATION_NOT_FOUND') {
-      res.status(404).json({ error: 'Destination not found' });
-      return;
-    }
-    console.error(error);
-    res.status(500).json({ error: 'Failed to delete destination from trip' });
+  } catch (error) {
+    handleServiceError(error, res, 'Failed to delete destination from trip', {
+      ...TRIP_NOT_FOUND,
+      DESTINATION_NOT_FOUND: { status: 404, message: 'Destination not found' },
+    });
   }
 }
 
@@ -158,16 +122,7 @@ export async function updateTripHandler(req: AuthenticatedRequest, res: Response
     const { title, budgetTotal, peopleCount, startDate, endDate } = req.body;
     const updatedTrip = await updateTrip(req.userId!, tripId, { title, budgetTotal, peopleCount, startDate, endDate });
     res.json(updatedTrip);
-  } catch (error: any) {
-    if (error.message === 'TRIP_NOT_FOUND') {
-      res.status(404).json({ error: 'Trip not found' });
-      return;
-    }
-    if (error.message === 'INVALID_DATE_RANGE') {
-      res.status(400).json({ error: 'endDate must be on or after startDate' });
-      return;
-    }
-    console.error(error);
-    res.status(500).json({ error: 'Failed to update trip' });
+  } catch (error) {
+    handleServiceError(error, res, 'Failed to update trip', TRIP_NOT_FOUND);
   }
 }

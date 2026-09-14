@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import { AuthenticatedRequest } from '../middleware/auth.middleware';
 import { createExpense, getTripExpenses, updateExpense, deleteExpense } from '../services/expenses.service';
+import { handleServiceError } from '../lib/serviceErrors';
 
 function getParamId(value: string | string[]) {
   const id = Array.isArray(value) ? value[0] : value;
@@ -12,23 +13,19 @@ function getParamId(value: string | string[]) {
   return id;
 }
 
+const TRIP_NOT_FOUND = { TRIP_NOT_FOUND: { status: 404, message: 'Trip not found' } };
+
 export async function createExpenseHandler(req: AuthenticatedRequest, res: Response) {
   try {
     const { description, amount, category, date } = req.body;
     const tripId = getParamId(req.params.tripId);
     const expense = await createExpense(req.userId!, tripId, description, amount, category, date);
     res.status(201).json(expense);
-  } catch (error: any) {
-    if (error.message === 'INVALID_EXPENSE_ID') {
-      res.status(400).json({ error: 'Trip id is required' });
-      return;
-    }
-    if (error.message === 'TRIP_NOT_FOUND') {
-      res.status(404).json({ error: 'Trip not found' });
-      return;
-    }
-    console.error(error);
-    res.status(500).json({ error: 'Failed to create expense' });
+  } catch (error) {
+    handleServiceError(error, res, 'Failed to create expense', {
+      INVALID_EXPENSE_ID: { status: 400, message: 'Trip id is required' },
+      ...TRIP_NOT_FOUND,
+    });
   }
 }
 
@@ -37,17 +34,11 @@ export async function listExpensesHandler(req: AuthenticatedRequest, res: Respon
     const tripId = getParamId(req.params.tripId);
     const expenses = await getTripExpenses(req.userId!, tripId);
     res.json(expenses);
-  } catch (error: any) {
-    if (error.message === 'INVALID_EXPENSE_ID') {
-      res.status(400).json({ error: 'Trip id is required' });
-      return;
-    }
-    if (error.message === 'TRIP_NOT_FOUND') {
-      res.status(404).json({ error: 'Trip not found' });
-      return;
-    }
-    console.error(error);
-    res.status(500).json({ error: 'Failed to fetch expenses' });
+  } catch (error) {
+    handleServiceError(error, res, 'Failed to fetch expenses', {
+      INVALID_EXPENSE_ID: { status: 400, message: 'Trip id is required' },
+      ...TRIP_NOT_FOUND,
+    });
   }
 }
 
@@ -58,21 +49,12 @@ export async function updateExpenseHandler(req: AuthenticatedRequest, res: Respo
     const expenseId = getParamId(req.params.expenseId);
     const expense = await updateExpense(req.userId!, tripId, expenseId, { description, amount, category });
     res.json(expense);
-  } catch (error: any) {
-    if (error.message === 'INVALID_EXPENSE_ID') {
-      res.status(400).json({ error: 'Trip id and expense id are required' });
-      return;
-    }
-    if (error.message === 'TRIP_NOT_FOUND') {
-      res.status(404).json({ error: 'Trip not found' });
-      return;
-    }
-    if (error.code === 'P2025') {
-      res.status(404).json({ error: 'Expense not found' });
-      return;
-    }
-    console.error(error);
-    res.status(500).json({ error: 'Failed to update expense' });
+  } catch (error) {
+    handleServiceError(error, res, 'Failed to update expense', {
+      INVALID_EXPENSE_ID: { status: 400, message: 'Trip id and expense id are required' },
+      ...TRIP_NOT_FOUND,
+      P2025: { status: 404, message: 'Expense not found' },
+    });
   }
 }
 
@@ -82,20 +64,11 @@ export async function deleteExpenseHandler(req: AuthenticatedRequest, res: Respo
     const expenseId = getParamId(req.params.expenseId);
     await deleteExpense(req.userId!, tripId, expenseId);
     res.status(204).send();
-  } catch (error: any) {
-    if (error.message === 'INVALID_EXPENSE_ID') {
-      res.status(400).json({ error: 'Trip id and expense id are required' });
-      return;
-    }
-    if (error.message === 'TRIP_NOT_FOUND') {
-      res.status(404).json({ error: 'Trip not found' });
-      return;
-    }
-    if (error.code === 'P2025') {
-      res.status(404).json({ error: 'Expense not found' });
-      return;
-    }
-    console.error(error);
-    res.status(500).json({ error: 'Failed to delete expense' });
+  } catch (error) {
+    handleServiceError(error, res, 'Failed to delete expense', {
+      INVALID_EXPENSE_ID: { status: 400, message: 'Trip id and expense id are required' },
+      ...TRIP_NOT_FOUND,
+      P2025: { status: 404, message: 'Expense not found' },
+    });
   }
 }
