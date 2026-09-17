@@ -21,9 +21,10 @@ model User {
   ageRange     String?
   createdAt    DateTime @default(now())
 
-  interactions  Interaction[]
-  trips         Trip[]
-  refreshTokens RefreshToken[]
+  interactions        Interaction[]
+  trips               Trip[]
+  refreshTokens       RefreshToken[]
+  passwordResetTokens PasswordResetToken[]
 
   preferences UserPreference[]
 }
@@ -161,6 +162,19 @@ model RefreshToken {
   userId    String
   expiresAt DateTime
   revoked   Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  tokenHash String   @unique
+  userId    String
+  expiresAt DateTime
+  used      Boolean  @default(false)
   createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)

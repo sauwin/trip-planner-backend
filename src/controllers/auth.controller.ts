@@ -1,5 +1,12 @@
 import { Request, Response } from 'express';
-import { registerUser, loginUser, refreshTokens, logoutUser } from '../services/auth.service';
+import {
+  registerUser,
+  loginUser,
+  refreshTokens,
+  logoutUser,
+  requestPasswordReset,
+  resetPassword,
+} from '../services/auth.service';
 
 export async function register(req: Request, res: Response) {
   try {
@@ -50,6 +57,32 @@ export async function refresh(req: Request, res: Response) {
     }
     console.error(error);
     res.status(500).json({ error: 'Refresh failed' });
+  }
+}
+
+export async function forgotPassword(req: Request, res: Response) {
+  try {
+    const { email } = req.body;
+    await requestPasswordReset(email);
+  } catch (error) {
+    console.error(error);
+  }
+
+  res.json({ message: 'If this email is registered, a reset link has been sent.' });
+}
+
+export async function resetPasswordHandler(req: Request, res: Response) {
+  try {
+    const { token, newPassword } = req.body;
+    await resetPassword(token, newPassword);
+    res.json({ message: 'Password has been reset successfully' });
+  } catch (error: any) {
+    if (error.message === 'INVALID_RESET_TOKEN') {
+      res.status(400).json({ error: 'Reset link is invalid or has expired' });
+      return;
+    }
+    console.error(error);
+    res.status(500).json({ error: 'Failed to reset password' });
   }
 }
 
