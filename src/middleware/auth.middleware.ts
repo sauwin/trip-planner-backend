@@ -6,7 +6,7 @@ export interface AuthenticatedRequest extends Request {
   userId?: string;
 }
 
-export function requireAuth(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+export async function requireAuth(req: AuthenticatedRequest, res: Response, next: NextFunction) {
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -18,9 +18,24 @@ export function requireAuth(req: AuthenticatedRequest, res: Response, next: Next
 
   try {
     const payload = verifyAccessToken(token);
-    if (!payload || typeof payload.sub !== 'string' || payload.sub.length === 0) {
+    if (
+      !payload ||
+      typeof payload.sub !== 'string' ||
+      payload.sub.length === 0 ||
+      !Number.isInteger(payload.sessionVersion)
+    ) {
       throw new Error('Invalid token subject');
     }
+
+    const user = await prisma.user.findUnique({
+      where: { id: payload.sub },
+      select: { sessionVersion: true },
+    });
+
+    if (!user || user.sessionVersion !== payload.sessionVersion) {
+      throw new Error('Invalid session version');
+    }
+
     req.userId = payload.sub;
     next();
   } catch {

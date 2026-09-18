@@ -15,10 +15,11 @@ const REFRESH_EXPIRES = (process.env.JWT_REFRESH_EXPIRES as SignOptions['expires
 
 export interface AccessTokenPayload {
   sub: string;
+  sessionVersion: number;
 }
 
-export function signAccessToken(userId: string): string {
-  return jwt.sign({ sub: userId }, ACCESS_SECRET, { expiresIn: ACCESS_EXPIRES });
+export function signAccessToken(userId: string, sessionVersion: number): string {
+  return jwt.sign({ sub: userId, sessionVersion }, ACCESS_SECRET, { expiresIn: ACCESS_EXPIRES });
 }
 
 export function signRefreshToken(userId: string): string {

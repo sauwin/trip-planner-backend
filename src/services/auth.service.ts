@@ -7,7 +7,8 @@ import { sendPasswordResetEmail } from './email.service';
 
 const SALT_ROUNDS = 10;
 const REFRESH_EXPIRES_MS = 7 * 24 * 60 * 60 * 1000;
-const PASSWORD_RESET_EXPIRES_MS = (Number(process.env.PASSWORD_RESET_EXPIRES_MIN) || 30) * 60 * 1000;
+const PASSWORD_RESET_EXPIRES_MIN = Number(process.env.PASSWORD_RESET_EXPIRES_MIN) || 30;
+const PASSWORD_RESET_EXPIRES_MS = PASSWORD_RESET_EXPIRES_MIN * 60 * 1000;
 
 export async function registerUser(email: string, password: string) {
   const existing = await prisma.user.findUnique({ where: { email } });
@@ -69,48 +70,75 @@ export async function logoutUser(refreshToken: string) {
 export async function requestPasswordReset(email: string) {
   const user = await prisma.user.findUnique({ where: { email } });
 
-  // Навмисно НЕ кидаємо помилку, якщо користувача не знайдено, і не
-  // повертаємо нічого, що відрізнялось б від "успіху". Інакше зловмисник
-  // міг би перебирати email-адреси і за різницею у відповіді дізнаватись,
-  // які з них зареєстровані в системі (user enumeration attack).
   if (!user) return;
 
   const rawToken = randomBytes(32).toString('hex');
+  const tokenHash = hashToken(rawToken);
 
-  await prisma.passwordResetToken.create({
-    data: {
-      tokenHash: hashToken(rawToken),
-      userId: user.id,
-      expiresAt: new Date(Date.now() + PASSWORD_RESET_EXPIRES_MS),
-    },
-  });
+  await prisma.$transaction([
+    prisma.passwordResetToken.deleteMany({ where: { userId: user.id, used: false } }),
+    prisma.passwordResetToken.create({
+      data: {
+        tokenHash,
+        userId: user.id,
+        expiresAt: new Date(Date.now() + PASSWORD_RESET_EXPIRES_MS),
+      },
+    }),
+  ]);
 
   const resetLink = `${process.env.FRONTEND_URL}/reset-password?token=${rawToken}`;
-  await sendPasswordResetEmail(user.email, resetLink);
+  try {
+    await sendPasswordResetEmail(user.email, resetLink, PASSWORD_RESET_EXPIRES_MIN);
+  } catch (error) {
+    await prisma.passwordResetToken.deleteMany({ where: { tokenHash } });
+    console.error('Password reset email delivery failed', { userId: user.id, error });
+    throw error;
+  }
 }
 
 export async function resetPassword(token: string, newPassword: string) {
   const tokenHash = hashToken(token);
-  const stored = await prisma.passwordResetToken.findUnique({ where: { tokenHash } });
-
-  if (!stored || stored.used || stored.expiresAt < new Date()) {
-    throw new Error('INVALID_RESET_TOKEN');
-  }
-
   const passwordHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
 
-  await prisma.$transaction([
-    prisma.user.update({ where: { id: stored.userId }, data: { passwordHash } }),
-    prisma.passwordResetToken.update({ where: { id: stored.id }, data: { used: true } }),
-    // Відкликаємо ВСІ refresh-токени користувача: якщо пароль скидали
-    // через компрометацію акаунта, будь-яка стара сесія (в т.ч. зловмисника)
-    // одразу перестає працювати і доведеться заново логінитись новим паролем.
-    prisma.refreshToken.updateMany({ where: { userId: stored.userId }, data: { revoked: true } }),
-  ]);
+  await prisma.$transaction(async (tx) => {
+    const stored = await tx.passwordResetToken.findUnique({ where: { tokenHash } });
+    const now = new Date();
+
+    if (!stored) {
+      throw new Error('INVALID_RESET_TOKEN');
+    }
+
+    const consumed = await tx.passwordResetToken.updateMany({
+      where: { id: stored.id, used: false, expiresAt: { gt: now } },
+      data: { used: true },
+    });
+
+    if (consumed.count !== 1) {
+      throw new Error('INVALID_RESET_TOKEN');
+    }
+
+    await tx.user.update({
+      where: { id: stored.userId },
+      data: { passwordHash, sessionVersion: { increment: 1 } },
+    });
+    await tx.refreshToken.updateMany({
+      where: { userId: stored.userId },
+      data: { revoked: true },
+    });
+  });
 }
 
 async function issueTokenPair(userId: string) {
-  const accessToken = signAccessToken(userId);
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { sessionVersion: true },
+  });
+
+  if (!user) {
+    throw new Error('USER_NOT_FOUND');
+  }
+
+  const accessToken = signAccessToken(userId, user.sessionVersion);
   const refreshToken = signRefreshToken(userId);
 
   await prisma.refreshToken.create({
