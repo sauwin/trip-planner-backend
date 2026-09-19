@@ -2,14 +2,20 @@ import { prisma } from '../lib/prisma';
 import { assertTripOwnership } from '../lib/tripOwnership';
 
 interface TripDestinationDetailsInput {
-  accommodationName?: string;
-  accommodationPrice?: number;
-  accommodationUrl?: string;
-  plannedDateStart?: string;
-  plannedDateEnd?: string;
+  accommodationName?: string | null;
+  accommodationPrice?: number | null;
+  accommodationUrl?: string | null;
+  plannedDateStart?: string | null;
+  plannedDateEnd?: string | null;
 }
 
-function normalizeDetails(details?: TripDestinationDetailsInput) {
+function normalizeDetails(details?: TripDestinationDetailsInput): {
+  accommodationName?: string | null;
+  accommodationPrice?: number | null;
+  accommodationUrl?: string | null;
+  plannedDateStart?: Date | null;
+  plannedDateEnd?: Date | null;
+} {
   if (!details) return {};
 
   const { plannedDateStart, plannedDateEnd, ...rest } = details;
@@ -19,6 +25,25 @@ function normalizeDetails(details?: TripDestinationDetailsInput) {
     plannedDateStart: plannedDateStart !== undefined ? (plannedDateStart ? new Date(plannedDateStart) : null) : undefined,
     plannedDateEnd: plannedDateEnd !== undefined ? (plannedDateEnd ? new Date(plannedDateEnd) : null) : undefined,
   };
+}
+
+async function assertDestinationDatesWithinTrip(
+  tripId: string,
+  plannedDateStart: Date | null,
+  plannedDateEnd: Date | null,
+) {
+  const trip = await prisma.trip.findUnique({
+    where: { id: tripId },
+    select: { startDate: true, endDate: true },
+  });
+
+  if (!trip) throw new Error('TRIP_NOT_FOUND');
+  if (
+    (trip.startDate && plannedDateStart && plannedDateStart < trip.startDate) ||
+    (trip.endDate && plannedDateEnd && plannedDateEnd > trip.endDate)
+  ) {
+    throw new Error('DESTINATION_DATES_OUTSIDE_TRIP');
+  }
 }
 
 export async function createTrip(
@@ -81,6 +106,13 @@ export async function addDestinationToTrip(
 ) {
   await assertTripOwnership(userId, tripId);
 
+  const normalized = normalizeDetails(details);
+  await assertDestinationDatesWithinTrip(
+    tripId,
+    normalized.plannedDateStart ?? null,
+    normalized.plannedDateEnd ?? null,
+  );
+
   const lastPosition = await prisma.tripDestination.count({ where: { tripId } });
 
   return prisma.tripDestination.create({
@@ -88,7 +120,7 @@ export async function addDestinationToTrip(
       tripId,
       destinationId,
       position: lastPosition,
-      ...normalizeDetails(details),
+      ...normalized,
     },
   });
 }
@@ -116,6 +148,7 @@ export async function updateTripDestinationDetails(
   if (plannedDateStart && plannedDateEnd && plannedDateEnd < plannedDateStart) {
     throw new Error('INVALID_DATE_RANGE');
   }
+  await assertDestinationDatesWithinTrip(tripId, plannedDateStart, plannedDateEnd);
 
   return prisma.tripDestination.update({
     where: { tripId_destinationId: { tripId, destinationId } },
@@ -134,7 +167,7 @@ export async function deleteDestinationFromTrip(userId: string, tripId: string, 
 export async function updateTrip(
   userId: string,
   tripId: string,
-  data: Partial<{ title: string; budgetTotal: number; peopleCount: number; startDate: string; endDate: string }>,
+  data: Partial<{ title: string; budgetTotal: number | null; peopleCount: number; startDate: string | null; endDate: string | null }>,
 ) {
   await assertTripOwnership(userId, tripId);
 
@@ -149,6 +182,18 @@ export async function updateTrip(
   const nextEndDate = endDate === undefined ? existing.endDate : endDate ? new Date(endDate) : null;
   if (nextStartDate && nextEndDate && nextEndDate < nextStartDate) {
     throw new Error('INVALID_DATE_RANGE');
+  }
+
+  const destinations = await prisma.tripDestination.findMany({
+    where: { tripId },
+    select: { plannedDateStart: true, plannedDateEnd: true },
+  });
+  const hasDestinationOutsideRange = destinations.some((destination) =>
+    (nextStartDate && destination.plannedDateStart && destination.plannedDateStart < nextStartDate) ||
+    (nextEndDate && destination.plannedDateEnd && destination.plannedDateEnd > nextEndDate),
+  );
+  if (hasDestinationOutsideRange) {
+    throw new Error('TRIP_DATE_RANGE_CONFLICT');
   }
 
   return prisma.trip.update({

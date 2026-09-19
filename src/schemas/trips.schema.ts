@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 export const createTripSchema = z
   .object({
-    title: z.string().min(1, 'title is required'),
+    title: z.string().trim().min(1, 'title is required'),
     budgetTotal: z.number().positive('budgetTotal must be positive').optional(),
     peopleCount: z.number().int().positive('peopleCount must be a positive integer').optional(),
     startDate: z.string().datetime().optional(),
@@ -15,11 +15,11 @@ export const createTripSchema = z
 
 export const updateTripSchema = z
   .object({
-    title: z.string().min(1, 'title cannot be empty').optional(),
-    budgetTotal: z.number().positive('budgetTotal must be positive').optional(),
+    title: z.string().trim().min(1, 'title cannot be empty').optional(),
+    budgetTotal: z.number().positive('budgetTotal must be positive').optional().nullable(),
     peopleCount: z.number().int().positive('peopleCount must be a positive integer').optional(),
-    startDate: z.string().datetime().optional(),
-    endDate: z.string().datetime().optional(),
+    startDate: z.string().datetime().optional().nullable(),
+    endDate: z.string().datetime().optional().nullable(),
   })
   .refine(
     (data) => !data.startDate || !data.endDate || new Date(data.endDate) >= new Date(data.startDate),

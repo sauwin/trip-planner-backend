@@ -67,6 +67,7 @@ export async function addDestinationHandler(req: AuthenticatedRequest, res: Resp
       ...TRIP_NOT_FOUND,
       P2003: { status: 404, message: 'Destination not found' },
       P2002: { status: 409, message: 'Destination already in this trip' },
+      DESTINATION_DATES_OUTSIDE_TRIP: { status: 400, message: 'Destination dates must be within the trip dates' },
     });
   }
 }
@@ -85,7 +86,12 @@ export async function updateTripDestinationDetailsHandler(req: AuthenticatedRequ
     });
     res.json(result);
   } catch (error) {
-    handleServiceError(error, res, 'Failed to update trip destination details', TRIP_NOT_FOUND);
+    handleServiceError(error, res, 'Failed to update trip destination details', {
+      ...TRIP_NOT_FOUND,
+      DESTINATION_NOT_FOUND: { status: 404, message: 'Destination not found in this trip' },
+      INVALID_DATE_RANGE: { status: 400, message: 'plannedDateEnd must be on or after plannedDateStart' },
+      DESTINATION_DATES_OUTSIDE_TRIP: { status: 400, message: 'Destination dates must be within the trip dates' },
+    });
   }
 }
 
@@ -123,6 +129,10 @@ export async function updateTripHandler(req: AuthenticatedRequest, res: Response
     const updatedTrip = await updateTrip(req.userId!, tripId, { title, budgetTotal, peopleCount, startDate, endDate });
     res.json(updatedTrip);
   } catch (error) {
-    handleServiceError(error, res, 'Failed to update trip', TRIP_NOT_FOUND);
+    handleServiceError(error, res, 'Failed to update trip', {
+      ...TRIP_NOT_FOUND,
+      INVALID_DATE_RANGE: { status: 400, message: 'endDate must be on or after startDate' },
+      TRIP_DATE_RANGE_CONFLICT: { status: 400, message: 'Trip dates must include all destination dates' },
+    });
   }
 }
