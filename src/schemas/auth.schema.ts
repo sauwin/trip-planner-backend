@@ -1,8 +1,18 @@
 import { z } from 'zod';
 
+const strongPasswordSchema = z
+  .string()
+  .min(8, 'Password must be at least 8 characters')
+  .refine((value) => /[A-Z]/.test(value), {
+    message: 'Password must include at least one uppercase letter',
+  })
+  .refine((value) => /\d/.test(value), {
+    message: 'Password must include at least one number',
+  });
+
 export const registerSchema = z.object({
   email: z.string().trim().toLowerCase().email('Invalid email format'),
-  password: z.string().min(8, 'Password must be at least 8 characters'),
+  password: strongPasswordSchema,
 });
 
 export const loginSchema = z.object({
@@ -24,5 +34,5 @@ export const forgotPasswordSchema = z.object({
 
 export const resetPasswordSchema = z.object({
   token: z.string().min(1, 'Token is required'),
-  newPassword: z.string().min(8, 'Password must be at least 8 characters'),
+  newPassword: strongPasswordSchema,
 });
