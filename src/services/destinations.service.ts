@@ -10,6 +10,7 @@ export interface ListDestinationsParams {
 
 const FEATURES_INCLUDE = {
   features: { include: { feature: { include: { category: true } } } },
+  interactions: { where: { type: 'RATING' }, select: { value: true } },
 } satisfies Prisma.DestinationInclude;
 
 const DETAIL_INCLUDE = {
@@ -20,9 +21,15 @@ const DETAIL_INCLUDE = {
 type DestinationWithRawFeatures = Prisma.DestinationGetPayload<{ include: typeof FEATURES_INCLUDE }>;
 
 function withLeanFeatures<T extends DestinationWithRawFeatures>(destination: T) {
-  const { features, ...rest } = destination;
+  const { features, interactions, ...rest } = destination;
+  const ratings = interactions.map((interaction) => interaction.value).filter((value): value is number => value !== null);
+  const popularityScore = ratings.length > 0
+    ? ratings.reduce((sum, rating) => sum + rating, 0) / ratings.length
+    : 0;
+
   return {
     ...rest,
+    popularityScore,
     features: features.map((f) => ({
       featureId: f.featureId,
       key: f.feature.key,
@@ -43,15 +50,16 @@ export async function getAllDestinations({ limit, offset, country, featureIds }:
   const [items, total] = await Promise.all([
     prisma.destination.findMany({
       where,
-      take: limit,
-      skip: offset,
-      orderBy: { popularityScore: 'desc' },
       include: FEATURES_INCLUDE,
     }),
     prisma.destination.count({ where }),
   ]);
 
-  return { items: items.map(withLeanFeatures), total, limit, offset };
+  const rankedItems = items
+    .map(withLeanFeatures)
+    .sort((a, b) => b.popularityScore - a.popularityScore);
+
+  return { items: rankedItems.slice(offset, offset + limit), total, limit, offset };
 }
 
 export async function getDestinationById(id: string) {
