@@ -5,14 +5,24 @@ interface KnownError {
   message: string;
 }
 
+export function getErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : undefined;
+}
+
+export function getErrorCode(error: unknown) {
+  return typeof error === 'object' && error !== null && 'code' in error && typeof error.code === 'string'
+    ? error.code
+    : undefined;
+}
+
 export function handleServiceError(
   error: unknown,
   res: Response,
   fallbackMessage: string,
   knownErrors: Record<string, KnownError> = {},
 ) {
-  const messageKey = error instanceof Error ? error.message : undefined;
-  const codeKey = (error as { code?: string })?.code;
+  const messageKey = getErrorMessage(error);
+  const codeKey = getErrorCode(error);
 
   const known = (messageKey && knownErrors[messageKey]) || (codeKey && knownErrors[codeKey]);
 

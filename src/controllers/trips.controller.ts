@@ -3,11 +3,11 @@ import { AuthenticatedRequest } from '../middleware/auth.middleware';
 import { createTrip, getUserTrips, getTripById, addDestinationToTrip, deleteTrip, updateTripDestinationDetails, deleteDestinationFromTrip, updateTrip } from '../services/trips.service';
 import { handleServiceError } from '../lib/serviceErrors';
 
-function getParamId(value: string | string[]) {
+function getParamId(value: string | string[], errorCode = 'INVALID_TRIP_ID') {
   const id = Array.isArray(value) ? value[0] : value;
 
   if (!id) {
-    throw new Error('INVALID_TRIP_ID');
+    throw new Error(errorCode);
   }
 
   return id;
@@ -76,7 +76,7 @@ export async function updateTripDestinationDetailsHandler(req: AuthenticatedRequ
   try {
     const { accommodationName, accommodationPrice, accommodationUrl, plannedDateStart, plannedDateEnd } = req.body;
     const tripId = getParamId(req.params.id);
-    const destId = getParamId(req.params.destinationId);
+    const destId = getParamId(req.params.destinationId, 'INVALID_DESTINATION_ID');
     const result = await updateTripDestinationDetails(req.userId!, tripId, destId, {
       accommodationName,
       accommodationPrice,
@@ -87,6 +87,8 @@ export async function updateTripDestinationDetailsHandler(req: AuthenticatedRequ
     res.json(result);
   } catch (error) {
     handleServiceError(error, res, 'Failed to update trip destination details', {
+      INVALID_TRIP_ID: { status: 400, message: 'Trip id is required' },
+      INVALID_DESTINATION_ID: { status: 400, message: 'Destination id is required' },
       ...TRIP_NOT_FOUND,
       DESTINATION_NOT_FOUND: { status: 404, message: 'Destination not found in this trip' },
       INVALID_DATE_RANGE: { status: 400, message: 'plannedDateEnd must be on or after plannedDateStart' },
@@ -111,11 +113,13 @@ export async function deleteTripHandler(req: AuthenticatedRequest, res: Response
 export async function deleteDestinationHandler(req: AuthenticatedRequest, res: Response) {
   try {
     const tripId = getParamId(req.params.id);
-    const destId = getParamId(req.params.destinationId);
+    const destId = getParamId(req.params.destinationId, 'INVALID_DESTINATION_ID');
     await deleteDestinationFromTrip(req.userId!, tripId, destId);
     res.status(204).send();
   } catch (error) {
     handleServiceError(error, res, 'Failed to delete destination from trip', {
+      INVALID_TRIP_ID: { status: 400, message: 'Trip id is required' },
+      INVALID_DESTINATION_ID: { status: 400, message: 'Destination id is required' },
       ...TRIP_NOT_FOUND,
       DESTINATION_NOT_FOUND: { status: 404, message: 'Destination not found' },
     });

@@ -1,4 +1,5 @@
 import { prisma } from '../lib/prisma';
+import { computePopularityScore } from '../lib/popularity';
 
 interface DestinationFeatureView {
   featureId: string;
@@ -51,8 +52,8 @@ export async function getRecommendationsForUser(
       latitude: true,
       longitude: true,
       translations: true,
-      popularityScore: true,
       features: { include: { feature: { include: { category: true } } } },
+      interactions: { where: { type: 'RATING' }, select: { value: true } },
     },
   });
 
@@ -79,15 +80,16 @@ export async function getRecommendationsForUser(
 
     const normalizedScore = maxScore > 0 ? Math.max(0, Math.min(100, Math.round((score / maxScore) * 100))) : 0;
 
-    const { features, ...destinationData } = destination;
+    const { features, interactions, ...destinationData } = destination;
     const featureViews: DestinationFeatureView[] = features.map((f) => ({
       featureId: f.featureId,
       key: f.feature.key,
       categoryKey: f.feature.category.key,
       weight: f.weight,
     }));
+    const popularityScore = computePopularityScore(interactions);
 
-    return { destination: { ...destinationData, features: featureViews }, score: normalizedScore };
+    return { destination: { ...destinationData, popularityScore, features: featureViews }, score: normalizedScore };
   });
 
   const ranked = results

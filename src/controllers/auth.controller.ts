@@ -7,6 +7,7 @@ import {
   requestPasswordReset,
   resetPassword,
 } from '../services/auth.service';
+import { getErrorMessage } from '../lib/serviceErrors';
 
 export async function register(req: Request, res: Response) {
   try {
@@ -14,8 +15,8 @@ export async function register(req: Request, res: Response) {
 
     const tokens = await registerUser(email, password);
     res.status(201).json(tokens);
-  } catch (error: any) {
-    if (error.message === 'EMAIL_TAKEN') {
+  } catch (error: unknown) {
+    if (getErrorMessage(error) === 'EMAIL_TAKEN') {
       res.status(409).json({ error: 'Email already registered' });
       return;
     }
@@ -30,8 +31,8 @@ export async function login(req: Request, res: Response) {
 
     const tokens = await loginUser(email, password);
     res.json(tokens);
-  } catch (error: any) {
-    if (error.message === 'INVALID_CREDENTIALS') {
+  } catch (error: unknown) {
+    if (getErrorMessage(error) === 'INVALID_CREDENTIALS') {
       res.status(401).json({ error: 'Invalid email or password' });
       return;
     }
@@ -50,8 +51,8 @@ export async function refresh(req: Request, res: Response) {
 
     const tokens = await refreshTokens(refreshToken);
     res.json(tokens);
-  } catch (error: any) {
-    if (error.message === 'INVALID_REFRESH_TOKEN') {
+  } catch (error: unknown) {
+    if (getErrorMessage(error) === 'INVALID_REFRESH_TOKEN') {
       res.status(401).json({ error: 'Invalid or expired refresh token' });
       return;
     }
@@ -76,8 +77,8 @@ export async function resetPasswordHandler(req: Request, res: Response) {
     const { token, newPassword } = req.body;
     await resetPassword(token, newPassword);
     res.json({ message: 'Password has been reset successfully' });
-  } catch (error: any) {
-    if (error.message === 'INVALID_RESET_TOKEN') {
+  } catch (error: unknown) {
+    if (getErrorMessage(error) === 'INVALID_RESET_TOKEN') {
       res.status(400).json({ error: 'Reset link is invalid or has expired' });
       return;
     }

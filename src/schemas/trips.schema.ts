@@ -53,6 +53,3 @@ export const updateTripDestinationDetailsSchema = z
     { message: 'plannedDateEnd must be on or after plannedDateStart', path: ['plannedDateEnd'] },
   );
 
-export const deleteTripSchema = z.object({
-  id: z.string().uuid('id must be a valid UUID'),
-});

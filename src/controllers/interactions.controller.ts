@@ -2,6 +2,7 @@ import { Response } from 'express';
 import { AuthenticatedRequest } from '../middleware/auth.middleware';
 import { recordInteraction, removeInteraction, getUserInteractions, getDestinationStatus } from '../services/interactions.service';
 import { InteractionType } from '../generated/prisma/client';
+import { getErrorCode, getErrorMessage } from '../lib/serviceErrors';
 
 const VALID_TYPES = Object.values(InteractionType);
 
@@ -16,8 +17,8 @@ export async function recordInteractionHandler(req: AuthenticatedRequest, res: R
 
     const interaction = await recordInteraction(req.userId!, destinationId, type, value);
     res.status(201).json(interaction);
-  } catch (error: any) {
-    if (error.code === 'P2003') {
+  } catch (error: unknown) {
+    if (getErrorCode(error) === 'P2003') {
       res.status(404).json({ error: 'Destination not found' });
       return;
     }
@@ -37,8 +38,8 @@ export async function removeInteractionHandler(req: AuthenticatedRequest, res: R
 
     await removeInteraction(req.userId!, destinationId as string, type as InteractionType);
     res.status(204).send();
-  } catch (error: any) {
-    if (error.message === 'NOT_REMOVABLE') {
+  } catch (error: unknown) {
+    if (getErrorMessage(error) === 'NOT_REMOVABLE') {
       res.status(400).json({ error: 'This interaction type cannot be removed' });
       return;
     }

@@ -1,5 +1,6 @@
 import { prisma } from '../lib/prisma';
 import { Prisma } from '../generated/prisma/client';
+import { computePopularityScore } from '../lib/popularity';
 
 export interface ListDestinationsParams {
   limit: number;
@@ -22,10 +23,7 @@ type DestinationWithRawFeatures = Prisma.DestinationGetPayload<{ include: typeof
 
 function withLeanFeatures<T extends DestinationWithRawFeatures>(destination: T) {
   const { features, interactions, ...rest } = destination;
-  const ratings = interactions.map((interaction) => interaction.value).filter((value): value is number => value !== null);
-  const popularityScore = ratings.length > 0
-    ? ratings.reduce((sum, rating) => sum + rating, 0) / ratings.length
-    : 0;
+  const popularityScore = computePopularityScore(interactions);
 
   return {
     ...rest,

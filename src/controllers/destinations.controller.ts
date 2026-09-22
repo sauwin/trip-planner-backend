@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { getAllDestinations, getDestinationById, createDestination, deleteDestination } from '../services/destinations.service';
 import { AuthenticatedRequest } from '../middleware/auth.middleware';
 import { ListDestinationsQuery } from '../schemas/destinations.schema';
+import { getErrorCode } from '../lib/serviceErrors';
 
 export async function listDestinations(req: Request, res: Response) {
   try {
@@ -49,8 +50,8 @@ export async function createDestinationHandler(req: AuthenticatedRequest, res: R
       translations: translations || {},
     });
     res.status(201).json(destination);
-  } catch (error: any) {
-    if (error.code === 'P2002') {
+  } catch (error: unknown) {
+    if (getErrorCode(error) === 'P2002') {
       res.status(409).json({ error: 'Destination with this slug already exists' });
       return;
     }
@@ -69,8 +70,8 @@ export async function deleteDestinationHandler(req: AuthenticatedRequest, res: R
 
     await deleteDestination(id);
     res.status(204).send();
-  } catch (error: any) {
-    if (error.code === 'P2025') {
+  } catch (error: unknown) {
+    if (getErrorCode(error) === 'P2025') {
       res.status(404).json({ error: 'Destination not found' });
       return;
     }
