@@ -24,7 +24,6 @@ model User {
 
   interactions        Interaction[]
   trips               Trip[]
-  refreshTokens       RefreshToken[]
   passwordResetTokens PasswordResetToken[]
 
   preferences UserPreference[]
@@ -155,19 +154,6 @@ model TripDestination {
   destination Destination @relation(fields: [destinationId], references: [id], onDelete: Cascade)
 
   @@id([tripId, destinationId])
-}
-
-model RefreshToken {
-  id        String   @id @default(uuid())
-  tokenHash String   @unique
-  userId    String
-  expiresAt DateTime
-  revoked   Boolean  @default(false)
-  createdAt DateTime @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
 }
 
 model PasswordResetToken {
