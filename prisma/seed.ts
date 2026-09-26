@@ -681,7 +681,7 @@ async function main() {
     );
   }
 
-  console.log('Seed complete: 6 destinations, 5 categories, 14 features.');
+  console.log('Seed complete: 34 destinations, 5 categories, 14 features.');
 }
 
 main()
