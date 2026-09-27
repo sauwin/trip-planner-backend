@@ -6,8 +6,8 @@ import { createDestinationSchema, deleteDestinationSchema, listDestinationsQuery
 
 const router = Router();
 
-router.get('/', validateQuery(listDestinationsQuerySchema), listDestinations);
-router.get('/:id', getDestination);
+router.get('/',requireAuth, validateQuery(listDestinationsQuerySchema), listDestinations);
+router.get('/:id', requireAuth, getDestination);
 router.post('/', requireAuth, requireAdmin, validateBody(createDestinationSchema), createDestinationHandler);
 router.delete('/:id', requireAuth, requireAdmin, validateParams(deleteDestinationSchema), deleteDestinationHandler);
 
