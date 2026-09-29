@@ -76,3 +76,17 @@ export async function createDestination(data: { slug: string; country: string; l
 export async function deleteDestination(id: string) {
   return prisma.destination.delete({ where: { id } });
 }
+
+export async function getSavedDestinations(userId: string) {
+  const savedDestination = await prisma.destination.findMany({
+    where: {
+      interactions: {
+        some: {
+          userId: userId,
+          type: 'SAVE'
+        }
+      }
+    }
+  })
+  return savedDestination;
+}

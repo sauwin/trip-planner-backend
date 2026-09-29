@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { getAllDestinations, getDestinationById, createDestination, deleteDestination } from '../services/destinations.service';
+import { getAllDestinations, getDestinationById, createDestination, deleteDestination, getSavedDestinations } from '../services/destinations.service';
 import { AuthenticatedRequest } from '../middleware/auth.middleware';
 import { ListDestinationsQuery } from '../schemas/destinations.schema';
 import { getErrorCode } from '../lib/serviceErrors';
@@ -77,5 +77,15 @@ export async function deleteDestinationHandler(req: AuthenticatedRequest, res: R
     }
     console.error(error);
     res.status(500).json({ error: 'Failed to delete destination' });
+  }
+}
+
+export async function getSavedDestination(req: AuthenticatedRequest, res: Response) {
+  try {
+    const savedDestinations = await getSavedDestinations(req.userId!);
+    res.status(200).json(savedDestinations);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to fetch saved destinations' }); 
   }
 }
