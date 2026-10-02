@@ -36,7 +36,25 @@ export async function getAllDestinations({ limit, offset, country, featureIds }:
   const conditions: Prisma.DestinationWhereInput[] = [];
   if (country) conditions.push({ country });
   if (featureIds && featureIds.length > 0) {
-    conditions.push(...featureIds.map((featureId) => ({ features: { some: { featureId } } })));
+    const features = await prisma.feature.findMany({
+      where: { id: { in: featureIds } },
+      select: { id: true, categoryId: true },
+    });
+    const featureCategories = new Map(features.map((feature) => [feature.id, feature.categoryId]));
+    const featureIdsByCategory = new Map<string, string[]>();
+
+    for (const featureId of featureIds) {
+      const categoryId = featureCategories.get(featureId) ?? `unknown:${featureId}`;
+      const selectedIds = featureIdsByCategory.get(categoryId) ?? [];
+      selectedIds.push(featureId);
+      featureIdsByCategory.set(categoryId, selectedIds);
+    }
+
+    conditions.push(
+      ...[...featureIdsByCategory.values()].map((selectedIds) => ({
+        features: { some: { featureId: { in: selectedIds } } },
+      })),
+    );
   }
   const where = conditions.length > 0 ? { AND: conditions } : undefined;
 

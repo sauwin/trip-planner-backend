@@ -1,5 +1,5 @@
 import { prisma } from '../lib/prisma';
-import { computePopularityScore } from '../lib/popularity';
+import { recommendationCategoryKeys } from '../data/recommendationCatalog';
 
 interface DestinationFeatureView {
   featureId: string;
@@ -35,13 +35,42 @@ export async function getRecommendationsForUser(
   offset: number = 0,
   featureIds?: string[]
 ): Promise<PaginatedRecommendations> {
-  const preferences = await prisma.userPreference.findMany({
+  const savedPreferences = await prisma.userPreference.findMany({
     where: { userId },
-    include: { category: true },
+    include: { category: true, feature: true },
   });
 
-  if (preferences.length === 0) {
+  if (savedPreferences.length === 0) {
     throw new Error('NO_PREFERENCES');
+  }
+
+  const activeCategoryKeys = new Set<string>(recommendationCategoryKeys);
+  const activePreferences = savedPreferences.filter(({ category }) => activeCategoryKeys.has(category.key));
+  const answeredActiveCategories = new Set(activePreferences.map(({ category }) => category.key));
+  if (activePreferences.length > 0 && answeredActiveCategories.size !== recommendationCategoryKeys.length) {
+    throw new Error('NO_PREFERENCES');
+  }
+
+  const preferences = activePreferences.length > 0 ? activePreferences : savedPreferences;
+  const preferencesByCategory = new Map<string, typeof savedPreferences>();
+  for (const preference of preferences) {
+    const group = preferencesByCategory.get(preference.categoryId) ?? [];
+    group.push(preference);
+    preferencesByCategory.set(preference.categoryId, group);
+  }
+
+  const featureFilterGroups = new Map<string, Set<string>>();
+  if (featureIds?.length) {
+    const filterFeatures = await prisma.feature.findMany({
+      where: { id: { in: featureIds } },
+      select: { id: true, categoryId: true },
+    });
+    for (const featureId of featureIds) {
+      const categoryId = filterFeatures.find((feature) => feature.id === featureId)?.categoryId ?? `unknown:${featureId}`;
+      const group = featureFilterGroups.get(categoryId) ?? new Set<string>();
+      group.add(featureId);
+      featureFilterGroups.set(categoryId, group);
+    }
   }
 
   const destinations = await prisma.destination.findMany({
@@ -52,44 +81,44 @@ export async function getRecommendationsForUser(
       latitude: true,
       longitude: true,
       translations: true,
+      popularityScore: true,
       features: { include: { feature: { include: { category: true } } } },
-      interactions: { where: { type: 'RATING' }, select: { value: true } },
     },
   });
 
-  const filteredDestinations =
-    featureIds && featureIds.length > 0
-      ? destinations.filter((destination) =>
-          featureIds.every((featureId) => destination.features.some((f) => f.featureId === featureId))
-        )
-      : destinations;
+  const filteredDestinations = featureFilterGroups.size
+    ? destinations.filter((destination) =>
+        [...featureFilterGroups.values()].every((selectedIds) =>
+          destination.features.some((feature) => selectedIds.has(feature.featureId)),
+        ),
+      )
+    : destinations;
 
   const results = filteredDestinations.map((destination) => {
     let score = 0;
     let maxScore = 0;
 
-    for (const pref of preferences) {
-      const categoryWeight = pref.category.defaultWeight;
+    for (const categoryPreferences of preferencesByCategory.values()) {
+      const categoryWeight = Math.max(0, categoryPreferences[0].category.defaultWeight);
       maxScore += categoryWeight;
-
-      const match = destination.features.find((f) => f.featureId === pref.featureId);
-      const matchWeight = match ? match.weight : 0;
-
-      score += categoryWeight * matchWeight;
+      const bestMatchWeight = categoryPreferences.reduce((bestWeight, preference) => {
+        const match = destination.features.find((feature) => feature.featureId === preference.featureId);
+        return Math.max(bestWeight, Math.max(0, Math.min(1, match?.weight ?? 0)));
+      }, 0);
+      score += categoryWeight * bestMatchWeight;
     }
 
     const normalizedScore = maxScore > 0 ? Math.max(0, Math.min(100, Math.round((score / maxScore) * 100))) : 0;
 
-    const { features, interactions, ...destinationData } = destination;
+    const { features, ...destinationData } = destination;
     const featureViews: DestinationFeatureView[] = features.map((f) => ({
       featureId: f.featureId,
       key: f.feature.key,
       categoryKey: f.feature.category.key,
       weight: f.weight,
     }));
-    const popularityScore = computePopularityScore(interactions);
 
-    return { destination: { ...destinationData, popularityScore, features: featureViews }, score: normalizedScore };
+    return { destination: { ...destinationData, features: featureViews }, score: normalizedScore };
   });
 
   const ranked = results
@@ -98,7 +127,7 @@ export async function getRecommendationsForUser(
       if (b.score !== a.score) {
         return b.score - a.score;
       }
-      return b.destination.popularityScore - a.destination.popularityScore;
+      return a.destination.slug.localeCompare(b.destination.slug);
     });
 
   return {

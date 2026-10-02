@@ -1,31 +1,54 @@
 import 'dotenv/config';
 import { prisma } from '../src/lib/prisma';
+import {
+  destinationFeatureProfiles,
+  destinationSecondaryFeatureProfiles,
+  recommendationCatalog,
+  recommendationCategoryKeys,
+  recommendationFeatureKeys,
+  type RecommendationFeatureKey,
+} from '../src/data/recommendationCatalog';
 
 async function main() {
-  const activity = await prisma.featureCategory.create({ data: { key: 'activity', defaultWeight: 1.0 } });
-  const climate = await prisma.featureCategory.create({ data: { key: 'climate', defaultWeight: 0.8 } });
-  const budget = await prisma.featureCategory.create({ data: { key: 'budget', defaultWeight: 0.6 } });
-  const landscape = await prisma.featureCategory.create({ data: { key: 'landscape', defaultWeight: 0.7 } });
-  const season = await prisma.featureCategory.create({ data: { key: 'season', defaultWeight: 0.75 } });
+  const featureIds = new Map<string, string>();
 
-  const hiking = await prisma.feature.create({ data: { key: 'hiking', categoryId: activity.id } });
-  const beach = await prisma.feature.create({ data: { key: 'beach', categoryId: activity.id } });
-  const nightlife = await prisma.feature.create({ data: { key: 'nightlife', categoryId: activity.id } });
-  const museums = await prisma.feature.create({ data: { key: 'museums', categoryId: activity.id } });
+  for (const category of recommendationCatalog) {
+    const savedCategory = await prisma.featureCategory.upsert({
+      where: { key: category.key },
+      create: { key: category.key, defaultWeight: category.defaultWeight },
+      update: { defaultWeight: category.defaultWeight },
+    });
+    for (const featureKey of category.features) {
+      const savedFeature = await prisma.feature.upsert({
+        where: { key: featureKey },
+        create: { key: featureKey, categoryId: savedCategory.id },
+        update: { categoryId: savedCategory.id },
+      });
+      featureIds.set(featureKey, savedFeature.id);
+    }
+  }
 
-  const warm = await prisma.feature.create({ data: { key: 'warm', categoryId: climate.id } });
-  const cold = await prisma.feature.create({ data: { key: 'cold', categoryId: climate.id } });
+  const featureByKey = new Map<string, { id: string; key: RecommendationFeatureKey }>(
+    recommendationFeatureKeys.map((key) => [key, { id: featureIds.get(key)!, key }] as const),
+  );
+  const categoryByFeature = new Map<string, string>(
+    recommendationCatalog.flatMap((category) => category.features.map((featureKey) => [featureKey, category.key] as const)),
+  );
 
-  const budgetLow = await prisma.feature.create({ data: { key: 'budget-low', categoryId: budget.id } });
-  const budgetHigh = await prisma.feature.create({ data: { key: 'budget-high', categoryId: budget.id } });
-
-  const mountains = await prisma.feature.create({ data: { key: 'mountains', categoryId: landscape.id } });
-  const coastal = await prisma.feature.create({ data: { key: 'coastal', categoryId: landscape.id } });
-
-  const spring = await prisma.feature.create({ data: { key: 'spring', categoryId: season.id } });
-  const summer = await prisma.feature.create({ data: { key: 'summer', categoryId: season.id } });
-  const autumn = await prisma.feature.create({ data: { key: 'autumn', categoryId: season.id } });
-  const winter = await prisma.feature.create({ data: { key: 'winter', categoryId: season.id } });
+  const hiking = featureByKey.get('nature-hiking')!;
+  const beach = featureByKey.get('nature-coastal')!;
+  const nightlife = featureByKey.get('motivation-social')!;
+  const museums = featureByKey.get('culture-arts')!;
+  const warm = featureByKey.get('summer')!;
+  const cold = featureByKey.get('winter')!;
+  const budgetLow = featureByKey.get('budget-value')!;
+  const budgetHigh = featureByKey.get('budget-premium')!;
+  const mountains = featureByKey.get('nature-hiking')!;
+  const coastal = featureByKey.get('nature-coastal')!;
+  const spring = featureByKey.get('spring')!;
+  const summer = featureByKey.get('summer')!;
+  const autumn = featureByKey.get('autumn')!;
+  const winter = featureByKey.get('winter')!;
 
   const destinations = [
     {
@@ -670,18 +693,62 @@ async function main() {
     },
   ];
 
-  for (const { features: featureLinks, ...data } of destinations) {
-    const destination = await prisma.destination.create({ data });
+  for (const { features: legacyFeatures, ...data } of destinations) {
+    void legacyFeatures;
+    const destination = await prisma.destination.upsert({
+      where: { slug: data.slug },
+      create: data,
+      update: data,
+    });
+    const profile = destinationFeatureProfiles[data.slug];
+
+    if (!profile || profile.length !== recommendationCategoryKeys.length) {
+      throw new Error(`Invalid recommendation profile for destination: ${data.slug}`);
+    }
+
+    const featuresByCategory = new Set<string>();
+    const featureLinks = profile.map((featureKey) => {
+      const feature = featureByKey.get(featureKey);
+      if (!feature) {
+        throw new Error(`Unknown recommendation feature "${featureKey}" for destination: ${data.slug}`);
+      }
+      const categoryKey = categoryByFeature.get(featureKey);
+      if (!categoryKey || featuresByCategory.has(categoryKey)) {
+        throw new Error(`Invalid category assignment for "${featureKey}" at destination: ${data.slug}`);
+      }
+      featuresByCategory.add(categoryKey);
+      return { featureId: feature.id, weight: 0.8 };
+    });
+
+    if (featuresByCategory.size !== recommendationCategoryKeys.length) {
+      throw new Error(`Incomplete recommendation profile for destination: ${data.slug}`);
+    }
+
+    const linksByFeatureId = new Map(featureLinks.map((link) => [link.featureId, link]));
+    for (const featureKey of destinationSecondaryFeatureProfiles[data.slug] ?? []) {
+      const feature = featureByKey.get(featureKey);
+      if (!feature) {
+        throw new Error(`Unknown secondary feature "${featureKey}" for destination: ${data.slug}`);
+      }
+      if (!linksByFeatureId.has(feature.id)) {
+        linksByFeatureId.set(feature.id, { featureId: feature.id, weight: 0.55 });
+      }
+    }
+
     await Promise.all(
-      featureLinks.map(({ feature, weight }) =>
-        prisma.destinationFeature.create({
-          data: { destinationId: destination.id, featureId: feature.id, weight },
+      [...linksByFeatureId.values()].map(({ featureId, weight }) =>
+        prisma.destinationFeature.upsert({
+          where: { destinationId_featureId: { destinationId: destination.id, featureId } },
+          create: { destinationId: destination.id, featureId, weight },
+          update: { weight },
         }),
       ),
     );
   }
 
-  console.log('Seed complete: 34 destinations, 5 categories, 14 features.');
+  console.log(
+    `Seed complete: ${destinations.length} destinations, ${recommendationCategoryKeys.length} categories, ${recommendationFeatureKeys.length} features.`,
+  );
 }
 
 main()

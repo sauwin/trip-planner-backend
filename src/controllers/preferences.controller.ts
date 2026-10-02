@@ -27,6 +27,10 @@ export async function savePreferences(req: AuthenticatedRequest, res: Response) 
       res.status(400).json({ error: 'Each selected feature must belong to its category' });
       return;
     }
+    if (error instanceof Error && error.message === 'INCOMPLETE_PREFERENCES') {
+      res.status(400).json({ error: 'INCOMPLETE_PREFERENCES' });
+      return;
+    }
     res.status(500).json({ error: 'Failed to save preferences' });
   }
 }

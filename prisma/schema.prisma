@@ -155,7 +155,7 @@ model UserPreference {
   category FeatureCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   feature  Feature         @relation(fields: [featureId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, categoryId])
+  @@unique([userId, categoryId, featureId])
 }
 
 enum ExpenseCategory {

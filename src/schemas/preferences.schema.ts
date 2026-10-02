@@ -8,5 +8,11 @@ export const savePreferencesSchema = z.object({
         featureId: z.string().uuid('featureId must be a valid UUID'),
       }),
     )
-    .min(1, 'preferences must be a non-empty array'),
+    .min(1, 'preferences must be a non-empty array')
+    .refine(
+      (preferences) =>
+        new Set(preferences.map(({ categoryId, featureId }) => `${categoryId}:${featureId}`)).size ===
+        preferences.length,
+      'preferences must not contain duplicate feature selections',
+    ),
 });
