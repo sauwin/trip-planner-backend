@@ -43,7 +43,8 @@ export async function refreshTokens(refreshToken: string) {
     !payload ||
     typeof payload.sub !== 'string' ||
     (payload.role !== 'USER' && payload.role !== 'ADMIN') ||
-    !payload.sessionVersion
+    !Number.isInteger(payload.sessionVersion) ||
+    payload.sessionVersion < 0
   ) {
     throw new Error('INVALID_REFRESH_TOKEN');
   }

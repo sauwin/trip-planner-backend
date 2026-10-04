@@ -10,7 +10,8 @@ import {
 } from '../src/data/recommendationCatalog';
 
 async function main() {
-  const featureIds = new Map<string, string>();
+  const featureIdByKey = new Map<RecommendationFeatureKey, string>();
+  const categoryByFeature = new Map<RecommendationFeatureKey, string>();
 
   for (const category of recommendationCatalog) {
     const savedCategory = await prisma.featureCategory.upsert({
@@ -24,31 +25,10 @@ async function main() {
         create: { key: featureKey, categoryId: savedCategory.id },
         update: { categoryId: savedCategory.id },
       });
-      featureIds.set(featureKey, savedFeature.id);
+      featureIdByKey.set(featureKey, savedFeature.id);
+      categoryByFeature.set(featureKey, category.key);
     }
   }
-
-  const featureByKey = new Map<string, { id: string; key: RecommendationFeatureKey }>(
-    recommendationFeatureKeys.map((key) => [key, { id: featureIds.get(key)!, key }] as const),
-  );
-  const categoryByFeature = new Map<string, string>(
-    recommendationCatalog.flatMap((category) => category.features.map((featureKey) => [featureKey, category.key] as const)),
-  );
-
-  const hiking = featureByKey.get('nature-hiking')!;
-  const beach = featureByKey.get('nature-coastal')!;
-  const nightlife = featureByKey.get('motivation-social')!;
-  const museums = featureByKey.get('culture-arts')!;
-  const warm = featureByKey.get('summer')!;
-  const cold = featureByKey.get('winter')!;
-  const budgetLow = featureByKey.get('budget-value')!;
-  const budgetHigh = featureByKey.get('budget-premium')!;
-  const mountains = featureByKey.get('nature-hiking')!;
-  const coastal = featureByKey.get('nature-coastal')!;
-  const spring = featureByKey.get('spring')!;
-  const summer = featureByKey.get('summer')!;
-  const autumn = featureByKey.get('autumn')!;
-  const winter = featureByKey.get('winter')!;
 
   const destinations = [
     {
@@ -61,14 +41,6 @@ async function main() {
         sk: { name: 'Zakopane', description: 'Horské mesto na úpätí Tatier, obľúbené medzi turistami a lyžiarmi.' },
         en: { name: 'Zakopane', description: 'A mountain town at the foot of the Tatras, popular with hikers and skiers.' },
       },
-      features: [
-        { feature: hiking, weight: 0.9 },
-        { feature: mountains, weight: 0.95 },
-        { feature: cold, weight: 0.7 },
-        { feature: budgetLow, weight: 0.6 },
-        { feature: winter, weight: 0.9 },
-        { feature: summer, weight: 0.6 },
-      ],
     },
     {
       slug: 'barcelona',
@@ -80,16 +52,6 @@ async function main() {
         sk: { name: 'Barcelona', description: 'Prímorské mesto so slávnou architektúrou, plážami a nočným životom.' },
         en: { name: 'Barcelona', description: 'A coastal city known for its architecture, beaches, and nightlife.' },
       },
-      features: [
-        { feature: beach, weight: 0.7 },
-        { feature: nightlife, weight: 0.9 },
-        { feature: museums, weight: 0.8 },
-        { feature: warm, weight: 0.8 },
-        { feature: coastal, weight: 0.9 },
-        { feature: budgetHigh, weight: 0.6 },
-        { feature: summer, weight: 0.85 },
-        { feature: spring, weight: 0.65 },
-      ],
     },
     {
       slug: 'prague',
@@ -101,14 +63,6 @@ async function main() {
         sk: { name: 'Praha', description: 'Historické hlavné mesto so silnou kultúrnou a nočnou ponukou.' },
         en: { name: 'Prague', description: 'A historic capital with a strong cultural and nightlife scene.' },
       },
-      features: [
-        { feature: museums, weight: 0.9 },
-        { feature: nightlife, weight: 0.6 },
-        { feature: cold, weight: 0.5 },
-        { feature: budgetLow, weight: 0.7 },
-        { feature: spring, weight: 0.75 },
-        { feature: autumn, weight: 0.7 },
-      ],
     },
     {
       slug: 'male',
@@ -120,13 +74,6 @@ async function main() {
         sk: { name: 'Malé', description: 'Tropický ostrovný raj s plážami a teplým podnebím.' },
         en: { name: 'Malé', description: 'A tropical island paradise with beaches and warm weather.' },
       },
-      features: [
-        { feature: beach, weight: 0.95 },
-        { feature: warm, weight: 0.95 },
-        { feature: coastal, weight: 0.9 },
-        { feature: budgetHigh, weight: 0.9 },
-        { feature: winter, weight: 0.8 },
-      ],
     },
     {
       slug: 'reykjavik',
@@ -138,14 +85,6 @@ async function main() {
         sk: { name: 'Reykjavík', description: 'Hlavné mesto Islandu, brána k vulkanickej a horskej krajine.' },
         en: { name: 'Reykjavík', description: "Iceland's capital, gateway to volcanic and mountainous landscapes." },
       },
-      features: [
-        { feature: hiking, weight: 0.7 },
-        { feature: mountains, weight: 0.8 },
-        { feature: cold, weight: 0.95 },
-        { feature: budgetHigh, weight: 0.85 },
-        { feature: summer, weight: 0.85 },
-        { feature: winter, weight: 0.55 },
-      ],
     },
     {
       slug: 'bangkok',
@@ -157,13 +96,6 @@ async function main() {
         sk: { name: 'Bangkok', description: 'Rušné hlavné mesto s bohatou pouličnou kultúrou a nočným životom.' },
         en: { name: 'Bangkok', description: 'A bustling capital with rich street culture and nightlife.' },
       },
-      features: [
-        { feature: nightlife, weight: 0.85 },
-        { feature: museums, weight: 0.5 },
-        { feature: warm, weight: 0.9 },
-        { feature: budgetLow, weight: 0.85 },
-        { feature: winter, weight: 0.85 },
-      ],
     },
     {
       slug: 'vienna',
@@ -175,14 +107,6 @@ async function main() {
         sk: { name: 'Viedeň', description: 'Elegantné rakúske hlavné mesto, známe cisárskou architektúrou, klasickou hudbou a kaviarenskou kultúrou.' },
         en: { name: 'Vienna', description: "Austria's elegant capital, known for imperial architecture, classical music, and coffeehouse culture." },
       },
-      features: [
-        { feature: museums, weight: 0.9 },
-        { feature: nightlife, weight: 0.6 },
-        { feature: cold, weight: 0.5 },
-        { feature: budgetHigh, weight: 0.6 },
-        { feature: autumn, weight: 0.75 },
-        { feature: spring, weight: 0.7 },
-      ],
     },
     {
       slug: 'rome',
@@ -194,14 +118,6 @@ async function main() {
         sk: { name: 'Rím', description: 'Večné mesto s tisícročnou históriou, starovekými ruinami a bohatým umeleckým dedičstvom.' },
         en: { name: 'Rome', description: 'The Eternal City, with millennia of history, ancient ruins, and rich artistic heritage.' },
       },
-      features: [
-        { feature: museums, weight: 0.95 },
-        { feature: nightlife, weight: 0.6 },
-        { feature: warm, weight: 0.6 },
-        { feature: budgetHigh, weight: 0.55 },
-        { feature: spring, weight: 0.8 },
-        { feature: autumn, weight: 0.7 },
-      ],
     },
     {
       slug: 'lisbon',
@@ -213,15 +129,6 @@ async function main() {
         sk: { name: 'Lisabon', description: 'Prímorské hlavné mesto Portugalska s farebnou architektúrou, kopcami a živou nočnou scénou.' },
         en: { name: 'Lisbon', description: "Portugal's coastal capital, with colorful architecture, hills, and a lively nightlife scene." },
       },
-      features: [
-        { feature: nightlife, weight: 0.7 },
-        { feature: museums, weight: 0.6 },
-        { feature: coastal, weight: 0.7 },
-        { feature: warm, weight: 0.75 },
-        { feature: budgetLow, weight: 0.6 },
-        { feature: spring, weight: 0.75 },
-        { feature: summer, weight: 0.7 },
-      ],
     },
     {
       slug: 'amsterdam',
@@ -233,14 +140,6 @@ async function main() {
         sk: { name: 'Amsterdam', description: 'Holandské hlavné mesto s kanálmi, múzeami svetovej úrovne a cyklistickou kultúrou.' },
         en: { name: 'Amsterdam', description: "The Dutch capital, with canals, world-class museums, and a strong cycling culture." },
       },
-      features: [
-        { feature: museums, weight: 0.85 },
-        { feature: nightlife, weight: 0.8 },
-        { feature: cold, weight: 0.5 },
-        { feature: budgetHigh, weight: 0.6 },
-        { feature: spring, weight: 0.75 },
-        { feature: summer, weight: 0.65 },
-      ],
     },
     {
       slug: 'berlin',
@@ -252,14 +151,6 @@ async function main() {
         sk: { name: 'Berlín', description: 'Nemecké hlavné mesto s bohatou históriou, alternatívnou kultúrou a legendárnym nočným životom.' },
         en: { name: 'Berlin', description: "Germany's capital, with rich history, an alternative culture scene, and legendary nightlife." },
       },
-      features: [
-        { feature: nightlife, weight: 0.9 },
-        { feature: museums, weight: 0.8 },
-        { feature: cold, weight: 0.55 },
-        { feature: budgetLow, weight: 0.55 },
-        { feature: summer, weight: 0.6 },
-        { feature: autumn, weight: 0.6 },
-      ],
     },
     {
       slug: 'dubrovnik',
@@ -271,14 +162,6 @@ async function main() {
         sk: { name: 'Dubrovník', description: 'Opevnené prímorské mesto na chorvátskom pobreží, známe stredovekými hradbami a čistým morom.' },
         en: { name: 'Dubrovnik', description: 'A walled coastal city on the Croatian coast, known for its medieval fortifications and clear sea.' },
       },
-      features: [
-        { feature: beach, weight: 0.8 },
-        { feature: coastal, weight: 0.9 },
-        { feature: warm, weight: 0.85 },
-        { feature: budgetHigh, weight: 0.5 },
-        { feature: summer, weight: 0.9 },
-        { feature: spring, weight: 0.6 },
-      ],
     },
     {
       slug: 'marrakesh',
@@ -290,14 +173,6 @@ async function main() {
         sk: { name: 'Marrákeš', description: 'Marocké mesto s farebnými trhmi, historickou medinou a púštnou atmosférou.' },
         en: { name: 'Marrakesh', description: 'A Moroccan city with colorful markets, a historic medina, and a desert atmosphere.' },
       },
-      features: [
-        { feature: museums, weight: 0.6 },
-        { feature: nightlife, weight: 0.4 },
-        { feature: warm, weight: 0.9 },
-        { feature: budgetLow, weight: 0.8 },
-        { feature: autumn, weight: 0.7 },
-        { feature: winter, weight: 0.65 },
-      ],
     },
     {
       slug: 'cape-town',
@@ -309,15 +184,6 @@ async function main() {
         sk: { name: 'Kapské Mesto', description: 'Juhoafrické mesto pri Stolovej hore, s plážami, vinicami a bohatou prírodou.' },
         en: { name: 'Cape Town', description: 'A South African city at the foot of Table Mountain, with beaches, vineyards, and rich nature.' },
       },
-      features: [
-        { feature: hiking, weight: 0.7 },
-        { feature: beach, weight: 0.6 },
-        { feature: coastal, weight: 0.85 },
-        { feature: mountains, weight: 0.6 },
-        { feature: warm, weight: 0.6 },
-        { feature: budgetLow, weight: 0.6 },
-        { feature: summer, weight: 0.75 },
-      ],
     },
     {
       slug: 'rio-de-janeiro',
@@ -329,15 +195,6 @@ async function main() {
         sk: { name: 'Rio de Janeiro', description: 'Brazílske mesto s ikonickými plážami, karnevalom a horou Corcovado.' },
         en: { name: 'Rio de Janeiro', description: 'A Brazilian city with iconic beaches, carnival, and the Corcovado mountain.' },
       },
-      features: [
-        { feature: beach, weight: 0.9 },
-        { feature: nightlife, weight: 0.75 },
-        { feature: coastal, weight: 0.9 },
-        { feature: mountains, weight: 0.5 },
-        { feature: warm, weight: 0.85 },
-        { feature: budgetLow, weight: 0.55 },
-        { feature: summer, weight: 0.8 },
-      ],
     },
     {
       slug: 'new-york',
@@ -349,14 +206,6 @@ async function main() {
         sk: { name: 'New York', description: 'Americká metropola s mrakodrapmi, múzeami a nepretržitým mestským životom.' },
         en: { name: 'New York', description: 'An American metropolis with skyscrapers, museums, and a city that never sleeps.' },
       },
-      features: [
-        { feature: museums, weight: 0.9 },
-        { feature: nightlife, weight: 0.9 },
-        { feature: cold, weight: 0.5 },
-        { feature: budgetHigh, weight: 0.85 },
-        { feature: autumn, weight: 0.75 },
-        { feature: spring, weight: 0.65 },
-      ],
     },
     {
       slug: 'tokyo',
@@ -368,14 +217,6 @@ async function main() {
         sk: { name: 'Tokio', description: 'Japonské hlavné mesto, kde sa moderná technológia stretáva s tradičnou kultúrou.' },
         en: { name: 'Tokyo', description: "Japan's capital, where modern technology meets traditional culture." },
       },
-      features: [
-        { feature: nightlife, weight: 0.85 },
-        { feature: museums, weight: 0.75 },
-        { feature: budgetHigh, weight: 0.7 },
-        { feature: cold, weight: 0.4 },
-        { feature: spring, weight: 0.85 },
-        { feature: autumn, weight: 0.7 },
-      ],
     },
     {
       slug: 'kyoto',
@@ -387,13 +228,6 @@ async function main() {
         sk: { name: 'Kjóto', description: 'Bývalé japonské hlavné mesto s tisícmi chrámov a tradičnými záhradami.' },
         en: { name: 'Kyoto', description: "Japan's former capital, with thousands of temples and traditional gardens." },
       },
-      features: [
-        { feature: museums, weight: 0.9 },
-        { feature: hiking, weight: 0.4 },
-        { feature: budgetHigh, weight: 0.6 },
-        { feature: spring, weight: 0.9 },
-        { feature: autumn, weight: 0.85 },
-      ],
     },
     {
       slug: 'singapore',
@@ -405,13 +239,6 @@ async function main() {
         sk: { name: 'Singapur', description: 'Mestský štát v juhovýchodnej Ázii, známy čistotou, futuristickou architektúrou a gastronómiou.' },
         en: { name: 'Singapore', description: 'A Southeast Asian city-state known for cleanliness, futuristic architecture, and food culture.' },
       },
-      features: [
-        { feature: nightlife, weight: 0.75 },
-        { feature: museums, weight: 0.6 },
-        { feature: warm, weight: 0.9 },
-        { feature: budgetHigh, weight: 0.75 },
-        { feature: summer, weight: 0.5 },
-      ],
     },
     {
       slug: 'ubud',
@@ -423,12 +250,6 @@ async function main() {
         sk: { name: 'Ubud', description: 'Kultúrne srdce Bali, obklopené ryžovými terasami a tropickou prírodou.' },
         en: { name: 'Ubud', description: "Bali's cultural heart, surrounded by rice terraces and tropical nature." },
       },
-      features: [
-        { feature: hiking, weight: 0.6 },
-        { feature: warm, weight: 0.85 },
-        { feature: budgetLow, weight: 0.75 },
-        { feature: summer, weight: 0.7 },
-      ],
     },
     {
       slug: 'queenstown',
@@ -440,12 +261,6 @@ async function main() {
         sk: { name: 'Queenstown', description: 'Menšie juhoafrické mesto vo vnútrozemí, obľúbené pre pokojnú atmosféru a okolitú prírodu.' },
         en: { name: 'Queenstown', description: 'A smaller inland South African town, valued for its calm atmosphere and surrounding nature.' },
       },
-      features: [
-        { feature: hiking, weight: 0.5 },
-        { feature: budgetLow, weight: 0.7 },
-        { feature: warm, weight: 0.55 },
-        { feature: summer, weight: 0.6 },
-      ],
     },
     {
       slug: 'interlaken',
@@ -457,14 +272,6 @@ async function main() {
         sk: { name: 'Interlaken', description: 'Švajčiarske mesto medzi dvoma jazerami, brána k Alpám a adrenalínovým športom.' },
         en: { name: 'Interlaken', description: 'A Swiss town between two lakes, the gateway to the Alps and adventure sports.' },
       },
-      features: [
-        { feature: hiking, weight: 0.95 },
-        { feature: mountains, weight: 0.95 },
-        { feature: budgetHigh, weight: 0.7 },
-        { feature: cold, weight: 0.6 },
-        { feature: summer, weight: 0.75 },
-        { feature: winter, weight: 0.7 },
-      ],
     },
     {
       slug: 'chamonix',
@@ -476,14 +283,6 @@ async function main() {
         sk: { name: 'Chamonix', description: 'Francúzske horské stredisko pod Mont Blancom, ikona horolezectva a lyžovania.' },
         en: { name: 'Chamonix', description: 'A French mountain resort beneath Mont Blanc, an icon of mountaineering and skiing.' },
       },
-      features: [
-        { feature: hiking, weight: 0.9 },
-        { feature: mountains, weight: 0.95 },
-        { feature: cold, weight: 0.8 },
-        { feature: budgetHigh, weight: 0.65 },
-        { feature: winter, weight: 0.9 },
-        { feature: summer, weight: 0.6 },
-      ],
     },
     {
       slug: 'whistler',
@@ -495,14 +294,6 @@ async function main() {
         sk: { name: 'Whistler', description: 'Kanadské horské stredisko, jedno z najväčších lyžiarskych stredísk Severnej Ameriky.' },
         en: { name: 'Whistler', description: 'A Canadian mountain resort, one of the largest ski resorts in North America.' },
       },
-      features: [
-        { feature: hiking, weight: 0.7 },
-        { feature: mountains, weight: 0.9 },
-        { feature: cold, weight: 0.75 },
-        { feature: budgetHigh, weight: 0.7 },
-        { feature: winter, weight: 0.95 },
-        { feature: summer, weight: 0.5 },
-      ],
     },
     {
       slug: 'cancun',
@@ -514,13 +305,6 @@ async function main() {
         sk: { name: 'Cancún', description: 'Mexické prímorské letovisko s bielymi plážami a teplým karibským morom.' },
         en: { name: 'Cancún', description: 'A Mexican beach resort with white sand beaches and warm Caribbean waters.' },
       },
-      features: [
-        { feature: beach, weight: 0.95 },
-        { feature: coastal, weight: 0.9 },
-        { feature: warm, weight: 0.9 },
-        { feature: budgetHigh, weight: 0.55 },
-        { feature: winter, weight: 0.85 },
-      ],
     },
     {
       slug: 'phuket',
@@ -532,13 +316,6 @@ async function main() {
         sk: { name: 'Phuket', description: 'Najväčší thajský ostrov, obľúbený pre pláže, potápanie a nočný život.' },
         en: { name: 'Phuket', description: "Thailand's largest island, popular for beaches, diving, and nightlife." },
       },
-      features: [
-        { feature: beach, weight: 0.9 },
-        { feature: coastal, weight: 0.85 },
-        { feature: warm, weight: 0.9 },
-        { feature: budgetLow, weight: 0.75 },
-        { feature: winter, weight: 0.85 },
-      ],
     },
     {
       slug: 'dubai',
@@ -550,13 +327,6 @@ async function main() {
         sk: { name: 'Dubaj', description: 'Mesto v Spojených arabských emirátoch s mrakodrapmi, nákupmi a luxusnou atmosférou.' },
         en: { name: 'Dubai', description: 'A city in the United Arab Emirates with skyscrapers, shopping, and a luxury atmosphere.' },
       },
-      features: [
-        { feature: nightlife, weight: 0.7 },
-        { feature: museums, weight: 0.4 },
-        { feature: warm, weight: 0.85 },
-        { feature: budgetHigh, weight: 0.9 },
-        { feature: winter, weight: 0.8 },
-      ],
     },
     {
       slug: 'cairo',
@@ -568,13 +338,6 @@ async function main() {
         sk: { name: 'Káhira', description: 'Egyptské hlavné mesto pri pyramídach v Gíze, s tisícročnou históriou.' },
         en: { name: 'Cairo', description: "Egypt's capital near the pyramids of Giza, with millennia of history." },
       },
-      features: [
-        { feature: museums, weight: 0.9 },
-        { feature: warm, weight: 0.75 },
-        { feature: budgetLow, weight: 0.8 },
-        { feature: winter, weight: 0.75 },
-        { feature: autumn, weight: 0.6 },
-      ],
     },
     {
       slug: 'cusco',
@@ -586,14 +349,6 @@ async function main() {
         sk: { name: 'Cusco', description: 'Bývalé hlavné mesto Incov, východisko k Machu Picchu, v peruánskych Andách.' },
         en: { name: 'Cusco', description: 'The former Incan capital, the gateway to Machu Picchu, in the Peruvian Andes.' },
       },
-      features: [
-        { feature: hiking, weight: 0.85 },
-        { feature: mountains, weight: 0.8 },
-        { feature: budgetLow, weight: 0.65 },
-        { feature: cold, weight: 0.5 },
-        { feature: winter, weight: 0.7 },
-        { feature: summer, weight: 0.4 },
-      ],
     },
     {
       slug: 'edinburgh',
@@ -605,14 +360,6 @@ async function main() {
         sk: { name: 'Edinburgh', description: 'Škótske hlavné mesto s hradom, úzkymi uličkami a slávnym letným festivalom.' },
         en: { name: 'Edinburgh', description: "Scotland's capital, with a castle, narrow streets, and a famous summer festival." },
       },
-      features: [
-        { feature: museums, weight: 0.85 },
-        { feature: hiking, weight: 0.4 },
-        { feature: cold, weight: 0.6 },
-        { feature: budgetHigh, weight: 0.55 },
-        { feature: summer, weight: 0.75 },
-        { feature: autumn, weight: 0.6 },
-      ],
     },
     {
       slug: 'copenhagen',
@@ -624,14 +371,6 @@ async function main() {
         sk: { name: 'Kodaň', description: 'Dánske hlavné mesto známe dizajnom, cyklistikou a pobrežnou atmosférou.' },
         en: { name: 'Copenhagen', description: "Denmark's capital, known for design, cycling culture, and a coastal atmosphere." },
       },
-      features: [
-        { feature: museums, weight: 0.7 },
-        { feature: nightlife, weight: 0.6 },
-        { feature: cold, weight: 0.55 },
-        { feature: budgetHigh, weight: 0.75 },
-        { feature: summer, weight: 0.75 },
-        { feature: spring, weight: 0.6 },
-      ],
     },
     {
       slug: 'budapest',
@@ -643,14 +382,6 @@ async function main() {
         sk: { name: 'Budapešť', description: 'Maďarské hlavné mesto rozdelené Dunajom, známe kúpeľmi a nočným životom.' },
         en: { name: 'Budapest', description: "Hungary's capital, split by the Danube, known for thermal baths and nightlife." },
       },
-      features: [
-        { feature: nightlife, weight: 0.8 },
-        { feature: museums, weight: 0.75 },
-        { feature: budgetLow, weight: 0.75 },
-        { feature: cold, weight: 0.45 },
-        { feature: spring, weight: 0.7 },
-        { feature: autumn, weight: 0.65 },
-      ],
     },
     {
       slug: 'krakow',
@@ -662,14 +393,6 @@ async function main() {
         sk: { name: 'Krakov', description: 'Poľské historické mesto so stredovekým námestím a bohatou kultúrnou ponukou.' },
         en: { name: 'Krakow', description: 'A historic Polish city with a medieval square and rich cultural offerings.' },
       },
-      features: [
-        { feature: museums, weight: 0.8 },
-        { feature: nightlife, weight: 0.65 },
-        { feature: budgetLow, weight: 0.8 },
-        { feature: cold, weight: 0.55 },
-        { feature: spring, weight: 0.65 },
-        { feature: autumn, weight: 0.65 },
-      ],
     },
     {
       slug: 'ljubljana',
@@ -681,25 +404,13 @@ async function main() {
         sk: { name: 'Ľubľana', description: 'Slovinské hlavné mesto, malé a zelené, s hradom nad riekou Ľubľanicou.' },
         en: { name: 'Ljubljana', description: "Slovenia's capital, small and green, with a castle overlooking the Ljubljanica river." },
       },
-      features: [
-        { feature: museums, weight: 0.6 },
-        { feature: hiking, weight: 0.5 },
-        { feature: mountains, weight: 0.4 },
-        { feature: budgetLow, weight: 0.7 },
-        { feature: cold, weight: 0.45 },
-        { feature: spring, weight: 0.7 },
-        { feature: summer, weight: 0.65 },
-      ],
     },
   ];
 
-  for (const { features: legacyFeatures, ...data } of destinations) {
-    void legacyFeatures;
-    const destination = await prisma.destination.upsert({
-      where: { slug: data.slug },
-      create: data,
-      update: data,
-    });
+  const destinationIds: string[] = [];
+  const destinationFeatureRows: { destinationId: string; featureId: string; weight: number }[] = [];
+
+  for (const data of destinations) {
     const profile = destinationFeatureProfiles[data.slug];
 
     if (!profile || profile.length !== recommendationCategoryKeys.length) {
@@ -708,8 +419,8 @@ async function main() {
 
     const featuresByCategory = new Set<string>();
     const featureLinks = profile.map((featureKey) => {
-      const feature = featureByKey.get(featureKey);
-      if (!feature) {
+      const featureId = featureIdByKey.get(featureKey);
+      if (!featureId) {
         throw new Error(`Unknown recommendation feature "${featureKey}" for destination: ${data.slug}`);
       }
       const categoryKey = categoryByFeature.get(featureKey);
@@ -717,7 +428,7 @@ async function main() {
         throw new Error(`Invalid category assignment for "${featureKey}" at destination: ${data.slug}`);
       }
       featuresByCategory.add(categoryKey);
-      return { featureId: feature.id, weight: 0.8 };
+      return { featureId, weight: 0.8 };
     });
 
     if (featuresByCategory.size !== recommendationCategoryKeys.length) {
@@ -726,25 +437,36 @@ async function main() {
 
     const linksByFeatureId = new Map(featureLinks.map((link) => [link.featureId, link]));
     for (const featureKey of destinationSecondaryFeatureProfiles[data.slug] ?? []) {
-      const feature = featureByKey.get(featureKey);
-      if (!feature) {
+      const featureId = featureIdByKey.get(featureKey);
+      if (!featureId) {
         throw new Error(`Unknown secondary feature "${featureKey}" for destination: ${data.slug}`);
       }
-      if (!linksByFeatureId.has(feature.id)) {
-        linksByFeatureId.set(feature.id, { featureId: feature.id, weight: 0.55 });
+      if (!linksByFeatureId.has(featureId)) {
+        linksByFeatureId.set(featureId, { featureId, weight: 0.55 });
       }
     }
 
-    await Promise.all(
-      [...linksByFeatureId.values()].map(({ featureId, weight }) =>
-        prisma.destinationFeature.upsert({
-          where: { destinationId_featureId: { destinationId: destination.id, featureId } },
-          create: { destinationId: destination.id, featureId, weight },
-          update: { weight },
-        }),
-      ),
+    const destination = await prisma.destination.upsert({
+      where: { slug: data.slug },
+      create: data,
+      update: data,
+    });
+    destinationIds.push(destination.id);
+    destinationFeatureRows.push(
+      ...[...linksByFeatureId.values()].map(({ featureId, weight }) => ({
+        destinationId: destination.id,
+        featureId,
+        weight,
+      })),
     );
   }
+
+  await prisma.$transaction(async (tx) => {
+    await tx.destinationFeature.deleteMany({
+      where: { destinationId: { in: destinationIds } },
+    });
+    await tx.destinationFeature.createMany({ data: destinationFeatureRows });
+  });
 
   console.log(
     `Seed complete: ${destinations.length} destinations, ${recommendationCategoryKeys.length} categories, ${recommendationFeatureKeys.length} features.`,
