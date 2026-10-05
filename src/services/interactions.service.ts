@@ -1,32 +1,31 @@
-import { prisma } from '../lib/prisma';
 import { InteractionType } from '../generated/prisma/client';
+import {
+  createInteraction,
+  deleteInteractions,
+  findDestinationInteractions,
+  findUserInteractions,
+  replaceInteraction,
+} from '../repositories/interactions.repository';
 
 const STATEFUL_TYPES: InteractionType[] = [InteractionType.LIKE, InteractionType.RATING, InteractionType.SAVE];
 
 export async function recordInteraction(userId: string, destinationId: string, type: InteractionType, value?: number) {
   if (STATEFUL_TYPES.includes(type)) {
-    return prisma.$transaction(async (tx) => {
-      await tx.interaction.deleteMany({ where: { userId, destinationId, type } });
-      return tx.interaction.create({ data: { userId, destinationId, type, value } });
-    });
+    return replaceInteraction(userId, destinationId, type, value);
   }
 
-  return prisma.interaction.create({ data: { userId, destinationId, type, value } });
+  return createInteraction(userId, destinationId, type, value);
 }
 
 export async function removeInteraction(userId: string, destinationId: string, type: InteractionType) {
   if (!STATEFUL_TYPES.includes(type)) {
     throw new Error('NOT_REMOVABLE');
   }
-  return prisma.interaction.deleteMany({ where: { userId, destinationId, type } });
+  return deleteInteractions(userId, destinationId, type);
 }
 
 export async function getUserInteractions(userId: string) {
-  return prisma.interaction.findMany({
-    where: { userId },
-    include: { destination: { select: { slug: true, country: true, translations: true } } },
-    orderBy: { createdAt: 'desc' },
-  });
+  return findUserInteractions(userId);
 }
 
 export interface DestinationInteractionStatus {
@@ -36,9 +35,7 @@ export interface DestinationInteractionStatus {
 }
 
 export async function getDestinationStatus(userId: string, destinationId: string): Promise<DestinationInteractionStatus> {
-  const rows = await prisma.interaction.findMany({
-    where: { userId, destinationId, type: { in: STATEFUL_TYPES } },
-  });
+  const rows = await findDestinationInteractions(userId, destinationId, STATEFUL_TYPES);
 
   const rating = rows.find((r) => r.type === InteractionType.RATING);
 

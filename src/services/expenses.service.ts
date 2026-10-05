@@ -1,6 +1,11 @@
-import { prisma } from '../lib/prisma';
 import { ExpenseCategory } from '../generated/prisma/client';
 import { assertTripOwnership } from '../lib/tripOwnership';
+import {
+  createExpenseRecord,
+  deleteExpenseRecord,
+  findTripExpenses,
+  updateExpenseRecord,
+} from '../repositories/expenses.repository';
 
 export async function createExpense(
   userId: string,
@@ -12,24 +17,19 @@ export async function createExpense(
 ) {
   await assertTripOwnership(userId, tripId);
 
-  return prisma.expense.create({
-    data: {
-      tripId,
-      description,
-      amount,
-      category: category ?? ExpenseCategory.OTHER,
-      date: date ? new Date(date) : undefined,
-    },
+  return createExpenseRecord({
+    tripId,
+    description,
+    amount,
+    category: category ?? ExpenseCategory.OTHER,
+    date: date ? new Date(date) : undefined,
   });
 }
 
 export async function getTripExpenses(userId: string, tripId: string) {
   await assertTripOwnership(userId, tripId);
 
-  return prisma.expense.findMany({
-    where: { tripId },
-    orderBy: { date: 'desc' },
-  });
+  return findTripExpenses(tripId);
 }
 
 export async function updateExpense(
@@ -40,14 +40,11 @@ export async function updateExpense(
 ) {
   await assertTripOwnership(userId, tripId);
 
-  return prisma.expense.update({
-    where: { id: expenseId, tripId },
-    data,
-  });
+  return updateExpenseRecord(expenseId, tripId, data);
 }
 
 export async function deleteExpense(userId: string, tripId: string, expenseId: string) {
   await assertTripOwnership(userId, tripId);
 
-  return prisma.expense.delete({ where: { id: expenseId, tripId } });
+  return deleteExpenseRecord(expenseId, tripId);
 }

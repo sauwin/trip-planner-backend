@@ -1,5 +1,11 @@
-import { prisma } from '../lib/prisma';
 import { recommendationCategoryKeys } from '../data/recommendationCatalog';
+import {
+  findCategoriesByIds,
+  findFeaturesByIds,
+  findUserId,
+  findUserPreferences,
+  replaceUserPreferences,
+} from '../repositories/preferences.repository';
 
 const legacyCategoryKeys = ['activity', 'climate', 'budget', 'landscape', 'season'];
 
@@ -14,15 +20,12 @@ export async function saveUserPreferences(userId: string, preferences: Preferenc
     throw new Error('INVALID_PREFERENCES');
   }
 
-  const user = await prisma.user.findUnique({ where: { id: userId }, select: { id: true } });
+  const user = await findUserId(userId);
   if (!user) {
     throw new Error('USER_NOT_FOUND');
   }
 
-  const features = await prisma.feature.findMany({
-    where: { id: { in: preferences.map(({ featureId }) => featureId) } },
-    select: { id: true, categoryId: true },
-  });
+  const features = await findFeaturesByIds(preferences.map(({ featureId }) => featureId));
   const featureById = new Map(features.map((feature) => [feature.id, feature]));
 
   if (preferences.some(({ categoryId, featureId }) => featureById.get(featureId)?.categoryId !== categoryId)) {
@@ -30,12 +33,7 @@ export async function saveUserPreferences(userId: string, preferences: Preferenc
   }
 
   const submittedCategoryIds = new Set(preferences.map(({ categoryId }) => categoryId));
-  const selectedCategories = await prisma.featureCategory.findMany({
-    where: {
-      id: { in: [...submittedCategoryIds] },
-    },
-    select: { id: true, key: true },
-  });
+  const selectedCategories = await findCategoriesByIds([...submittedCategoryIds]);
   const submittedCategoryKeys = new Set(selectedCategories.map(({ key }) => key));
   const hasCurrentQuizSelections = recommendationCategoryKeys.some((key) => submittedCategoryKeys.has(key));
   const requiredCategoryKeys = hasCurrentQuizSelections ? recommendationCategoryKeys : legacyCategoryKeys;
@@ -48,21 +46,9 @@ export async function saveUserPreferences(userId: string, preferences: Preferenc
     throw new Error('INCOMPLETE_PREFERENCES');
   }
 
-  return prisma.$transaction(async (transaction) => {
-    await transaction.userPreference.deleteMany({ where: { userId } });
-    await transaction.userPreference.createMany({
-      data: preferences.map(({ categoryId, featureId }) => ({ userId, categoryId, featureId })),
-    });
-    return transaction.userPreference.findMany({
-      where: { userId },
-      include: { category: true, feature: true },
-    });
-  });
+  return replaceUserPreferences(userId, preferences);
 }
 
 export async function getUserPreferences(userId: string) {
-  return prisma.userPreference.findMany({
-    where: { userId },
-    include: { category: true, feature: true },
-  });
+  return findUserPreferences(userId);
 }

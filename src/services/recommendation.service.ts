@@ -1,5 +1,9 @@
-import { prisma } from '../lib/prisma';
 import { recommendationCategoryKeys } from '../data/recommendationCatalog';
+import {
+  findFeatureCategoriesByIds,
+  findPreferencesForUser,
+  findRecommendationDestinations,
+} from '../repositories/recommendation.repository';
 
 interface DestinationFeatureView {
   featureId: string;
@@ -35,10 +39,7 @@ export async function getRecommendationsForUser(
   offset: number = 0,
   featureIds?: string[]
 ): Promise<PaginatedRecommendations> {
-  const savedPreferences = await prisma.userPreference.findMany({
-    where: { userId },
-    include: { category: true, feature: true },
-  });
+  const savedPreferences = await findPreferencesForUser(userId);
 
   if (savedPreferences.length === 0) {
     throw new Error('NO_PREFERENCES');
@@ -61,10 +62,7 @@ export async function getRecommendationsForUser(
 
   const featureFilterGroups = new Map<string, Set<string>>();
   if (featureIds?.length) {
-    const filterFeatures = await prisma.feature.findMany({
-      where: { id: { in: featureIds } },
-      select: { id: true, categoryId: true },
-    });
+    const filterFeatures = await findFeatureCategoriesByIds(featureIds);
     for (const featureId of featureIds) {
       const categoryId = filterFeatures.find((feature) => feature.id === featureId)?.categoryId ?? `unknown:${featureId}`;
       const group = featureFilterGroups.get(categoryId) ?? new Set<string>();
@@ -73,18 +71,7 @@ export async function getRecommendationsForUser(
     }
   }
 
-  const destinations = await prisma.destination.findMany({
-    select: {
-      id: true,
-      slug: true,
-      country: true,
-      latitude: true,
-      longitude: true,
-      translations: true,
-      popularityScore: true,
-      features: { include: { feature: { include: { category: true } } } },
-    },
-  });
+  const destinations = await findRecommendationDestinations();
 
   const filteredDestinations = featureFilterGroups.size
     ? destinations.filter((destination) =>

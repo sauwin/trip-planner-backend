@@ -1,5 +1,18 @@
-import { prisma } from '../lib/prisma';
 import { assertTripOwnership } from '../lib/tripOwnership';
+import {
+  countTripDestinations,
+  createTripDestination,
+  createTripRecord,
+  deleteTripDestination,
+  deleteTripRecord,
+  findTripDateRange,
+  findTripDestinationDateRanges,
+  findTripDestinationDates,
+  findTripForUser,
+  findTripsForUser,
+  updateTripDestination,
+  updateTripRecord,
+} from '../repositories/trips.repository';
 
 interface TripDestinationDetailsInput {
   accommodationName?: string | null;
@@ -32,10 +45,7 @@ async function assertDestinationDatesWithinTrip(
   plannedDateStart: Date | null,
   plannedDateEnd: Date | null,
 ) {
-  const trip = await prisma.trip.findUnique({
-    where: { id: tripId },
-    select: { startDate: true, endDate: true },
-  });
+  const trip = await findTripDateRange(tripId);
 
   if (!trip) throw new Error('TRIP_NOT_FOUND');
   if (
@@ -54,48 +64,27 @@ export async function createTrip(
   startDate?: string,
   endDate?: string,
 ) {
-  return prisma.trip.create({
-    data: {
-      userId,
-      title,
-      budgetTotal,
-      peopleCount: peopleCount ?? 1,
-      startDate: startDate ? new Date(startDate) : undefined,
-      endDate: endDate ? new Date(endDate) : undefined,
-    },
+  return createTripRecord({
+    userId,
+    title,
+    budgetTotal,
+    peopleCount: peopleCount ?? 1,
+    startDate: startDate ? new Date(startDate) : undefined,
+    endDate: endDate ? new Date(endDate) : undefined,
   });
 }
 
 export async function getUserTrips(userId: string) {
-  return prisma.trip.findMany({
-    where: { userId },
-    orderBy: { createdAt: 'desc' },
-    include: {
-      destinations: {
-        select: { accommodationPrice: true, plannedDateStart: true, plannedDateEnd: true },
-      },
-      expenses: {
-        select: { amount: true, category: true, date: true },
-      },
-    },
-  });
+  return findTripsForUser(userId);
 }
 
 export async function getTripById(userId: string, tripId: string) {
-  return prisma.trip.findFirst({
-    where: { id: tripId, userId },
-    include: {
-      destinations: {
-        orderBy: { position: 'asc' },
-        include: { destination: true },
-      },
-    },
-  });
+  return findTripForUser(userId, tripId);
 }
 
 export async function deleteTrip(userId: string, tripId: string) {
   await assertTripOwnership(userId, tripId);
-  return prisma.trip.delete({ where: { id: tripId } });
+  return deleteTripRecord(tripId);
 }
 
 export async function addDestinationToTrip(
@@ -113,15 +102,13 @@ export async function addDestinationToTrip(
     normalized.plannedDateEnd ?? null,
   );
 
-  const lastPosition = await prisma.tripDestination.count({ where: { tripId } });
+  const lastPosition = await countTripDestinations(tripId);
 
-  return prisma.tripDestination.create({
-    data: {
-      tripId,
-      destinationId,
-      position: lastPosition,
-      ...normalized,
-    },
+  return createTripDestination({
+    tripId,
+    destinationId,
+    position: lastPosition,
+    ...normalized,
   });
 }
 
@@ -133,10 +120,7 @@ export async function updateTripDestinationDetails(
 ) {
   await assertTripOwnership(userId, tripId);
 
-  const existing = await prisma.tripDestination.findUnique({
-    where: { tripId_destinationId: { tripId, destinationId } },
-    select: { plannedDateStart: true, plannedDateEnd: true },
-  });
+  const existing = await findTripDestinationDates(tripId, destinationId);
   if (!existing) throw new Error('DESTINATION_NOT_FOUND');
 
   const plannedDateStart = details.plannedDateStart === undefined
@@ -150,16 +134,13 @@ export async function updateTripDestinationDetails(
   }
   await assertDestinationDatesWithinTrip(tripId, plannedDateStart, plannedDateEnd);
 
-  return prisma.tripDestination.update({
-    where: { tripId_destinationId: { tripId, destinationId } },
-    data: normalizeDetails(details),
-  });
+  return updateTripDestination(tripId, destinationId, normalizeDetails(details));
 }
 
 export async function deleteDestinationFromTrip(userId: string, tripId: string, destinationId: string) {
   await assertTripOwnership(userId, tripId);
 
-  const deleted = await prisma.tripDestination.deleteMany({ where: { tripId, destinationId } });
+  const deleted = await deleteTripDestination(tripId, destinationId);
   if (deleted.count === 0) throw new Error('DESTINATION_NOT_FOUND');
   return deleted;
 }
@@ -172,10 +153,7 @@ export async function updateTrip(
   await assertTripOwnership(userId, tripId);
 
   const { startDate, endDate, ...rest } = data;
-  const existing = await prisma.trip.findUnique({
-    where: { id: tripId },
-    select: { startDate: true, endDate: true },
-  });
+  const existing = await findTripDateRange(tripId);
   if (!existing) throw new Error('TRIP_NOT_FOUND');
 
   const nextStartDate = startDate === undefined ? existing.startDate : startDate ? new Date(startDate) : null;
@@ -184,10 +162,7 @@ export async function updateTrip(
     throw new Error('INVALID_DATE_RANGE');
   }
 
-  const destinations = await prisma.tripDestination.findMany({
-    where: { tripId },
-    select: { plannedDateStart: true, plannedDateEnd: true },
-  });
+  const destinations = await findTripDestinationDateRanges(tripId);
   const hasDestinationOutsideRange = destinations.some((destination) =>
     (nextStartDate && destination.plannedDateStart && destination.plannedDateStart < nextStartDate) ||
     (nextEndDate && destination.plannedDateEnd && destination.plannedDateEnd > nextEndDate),
@@ -196,12 +171,9 @@ export async function updateTrip(
     throw new Error('TRIP_DATE_RANGE_CONFLICT');
   }
 
-  return prisma.trip.update({
-    where: { id: tripId },
-    data: {
-      ...rest,
-      startDate: startDate === undefined ? undefined : nextStartDate,
-      endDate: endDate === undefined ? undefined : nextEndDate,
-    },
+  return updateTripRecord(tripId, {
+    ...rest,
+    startDate: startDate === undefined ? undefined : nextStartDate,
+    endDate: endDate === undefined ? undefined : nextEndDate,
   });
 }
