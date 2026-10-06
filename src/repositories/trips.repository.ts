@@ -1,12 +1,15 @@
 import { prisma } from '../lib/prisma';
 
 export async function findTripOwnedByUser(userId: string, tripId: string) {
-  return prisma.trip.findFirst({ where: { id: tripId, userId } });
+  return prisma.trip.findFirst({
+    where: { id: tripId, userId },
+    select: { id: true },
+  });
 }
 
-export async function findTripDateRange(tripId: string) {
-  return prisma.trip.findUnique({
-    where: { id: tripId },
+export async function findTripDateRangeForUser(userId: string, tripId: string) {
+  return prisma.trip.findFirst({
+    where: { id: tripId, userId },
     select: { startDate: true, endDate: true },
   });
 }

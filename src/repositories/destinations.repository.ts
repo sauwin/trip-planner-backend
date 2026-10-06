@@ -6,26 +6,44 @@ export const DESTINATION_FEATURES_INCLUDE = {
   interactions: { where: { type: 'RATING' }, select: { value: true } },
 } satisfies Prisma.DestinationInclude;
 
-export type DestinationWithRawFeatures = Prisma.DestinationGetPayload<{
-  include: typeof DESTINATION_FEATURES_INCLUDE;
-}>;
-
-export async function findFeatureCategories(featureIds: string[]) {
-  return prisma.feature.findMany({
-    where: { id: { in: featureIds } },
-    select: { id: true, categoryId: true },
-  });
+export interface DestinationFilters {
+  country?: string;
+  featureIds?: string[];
 }
 
-export async function findDestinations(where?: Prisma.DestinationWhereInput) {
-  return prisma.destination.findMany({
-    where,
-    include: DESTINATION_FEATURES_INCLUDE,
-  });
-}
+export async function findDestinations({ country, featureIds }: DestinationFilters) {
+  const conditions: Prisma.DestinationWhereInput[] = [];
+  if (country) conditions.push({ country });
 
-export async function countDestinations(where?: Prisma.DestinationWhereInput) {
-  return prisma.destination.count({ where });
+  if (featureIds?.length) {
+    const features = await prisma.feature.findMany({
+      where: { id: { in: featureIds } },
+      select: { id: true, categoryId: true },
+    });
+    const featureCategories = new Map(features.map((feature) => [feature.id, feature.categoryId]));
+    const featureIdsByCategory = new Map<string, string[]>();
+
+    for (const featureId of featureIds) {
+      const categoryId = featureCategories.get(featureId) ?? `unknown:${featureId}`;
+      const selectedIds = featureIdsByCategory.get(categoryId) ?? [];
+      selectedIds.push(featureId);
+      featureIdsByCategory.set(categoryId, selectedIds);
+    }
+
+    conditions.push(
+      ...[...featureIdsByCategory.values()].map((selectedIds) => ({
+        features: { some: { featureId: { in: selectedIds } } },
+      })),
+    );
+  }
+
+  const where = conditions.length > 0 ? { AND: conditions } : undefined;
+  const [items, total] = await Promise.all([
+    prisma.destination.findMany({ where, include: DESTINATION_FEATURES_INCLUDE }),
+    prisma.destination.count({ where }),
+  ]);
+
+  return { items, total };
 }
 
 export async function findDestinationById(id: string) {
@@ -35,13 +53,15 @@ export async function findDestinationById(id: string) {
   });
 }
 
-export async function createDestination(data: {
+export interface CreateDestinationData {
   slug: string;
   country: string;
   latitude: number;
   longitude: number;
   translations: Prisma.InputJsonValue;
-}) {
+}
+
+export async function createDestination(data: CreateDestinationData) {
   return prisma.destination.create({ data });
 }
 

@@ -5,7 +5,7 @@ import {
   createTripRecord,
   deleteTripDestination,
   deleteTripRecord,
-  findTripDateRange,
+  findTripDateRangeForUser,
   findTripDestinationDateRanges,
   findTripDestinationDates,
   findTripForUser,
@@ -40,14 +40,11 @@ function normalizeDetails(details?: TripDestinationDetailsInput): {
   };
 }
 
-async function assertDestinationDatesWithinTrip(
-  tripId: string,
+function assertDestinationDatesWithinTrip(
+  trip: { startDate: Date | null; endDate: Date | null },
   plannedDateStart: Date | null,
   plannedDateEnd: Date | null,
-) {
-  const trip = await findTripDateRange(tripId);
-
-  if (!trip) throw new Error('TRIP_NOT_FOUND');
+): void {
   if (
     (trip.startDate && plannedDateStart && plannedDateStart < trip.startDate) ||
     (trip.endDate && plannedDateEnd && plannedDateEnd > trip.endDate)
@@ -93,11 +90,12 @@ export async function addDestinationToTrip(
   destinationId: string,
   details?: TripDestinationDetailsInput,
 ) {
-  await assertTripOwnership(userId, tripId);
+  const trip = await findTripDateRangeForUser(userId, tripId);
+  if (!trip) throw new Error('TRIP_NOT_FOUND');
 
   const normalized = normalizeDetails(details);
   await assertDestinationDatesWithinTrip(
-    tripId,
+    trip,
     normalized.plannedDateStart ?? null,
     normalized.plannedDateEnd ?? null,
   );
@@ -118,7 +116,8 @@ export async function updateTripDestinationDetails(
   destinationId: string,
   details: TripDestinationDetailsInput,
 ) {
-  await assertTripOwnership(userId, tripId);
+  const trip = await findTripDateRangeForUser(userId, tripId);
+  if (!trip) throw new Error('TRIP_NOT_FOUND');
 
   const existing = await findTripDestinationDates(tripId, destinationId);
   if (!existing) throw new Error('DESTINATION_NOT_FOUND');
@@ -132,7 +131,7 @@ export async function updateTripDestinationDetails(
   if (plannedDateStart && plannedDateEnd && plannedDateEnd < plannedDateStart) {
     throw new Error('INVALID_DATE_RANGE');
   }
-  await assertDestinationDatesWithinTrip(tripId, plannedDateStart, plannedDateEnd);
+  assertDestinationDatesWithinTrip(trip, plannedDateStart, plannedDateEnd);
 
   return updateTripDestination(tripId, destinationId, normalizeDetails(details));
 }
@@ -150,10 +149,8 @@ export async function updateTrip(
   tripId: string,
   data: Partial<{ title: string; budgetTotal: number | null; peopleCount: number; startDate: string | null; endDate: string | null }>,
 ) {
-  await assertTripOwnership(userId, tripId);
-
   const { startDate, endDate, ...rest } = data;
-  const existing = await findTripDateRange(tripId);
+  const existing = await findTripDateRangeForUser(userId, tripId);
   if (!existing) throw new Error('TRIP_NOT_FOUND');
 
   const nextStartDate = startDate === undefined ? existing.startDate : startDate ? new Date(startDate) : null;

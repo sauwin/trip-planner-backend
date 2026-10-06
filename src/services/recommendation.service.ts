@@ -63,8 +63,11 @@ export async function getRecommendationsForUser(
   const featureFilterGroups = new Map<string, Set<string>>();
   if (featureIds?.length) {
     const filterFeatures = await findFeatureCategoriesByIds(featureIds);
+    const categoryIdByFeatureId = new Map(
+      filterFeatures.map(({ id, categoryId }) => [id, categoryId]),
+    );
     for (const featureId of featureIds) {
-      const categoryId = filterFeatures.find((feature) => feature.id === featureId)?.categoryId ?? `unknown:${featureId}`;
+      const categoryId = categoryIdByFeatureId.get(featureId) ?? `unknown:${featureId}`;
       const group = featureFilterGroups.get(categoryId) ?? new Set<string>();
       group.add(featureId);
       featureFilterGroups.set(categoryId, group);

@@ -1,13 +1,10 @@
-import { Prisma } from '../generated/prisma/client';
 import { computePopularityScore } from '../lib/popularity';
 import {
-  countDestinations,
   createDestination as insertDestination,
+  CreateDestinationData,
   deleteDestination as removeDestination,
-  DestinationWithRawFeatures,
   findDestinationById,
   findDestinations,
-  findFeatureCategories,
   findSavedDestinations as querySavedDestinations,
 } from '../repositories/destinations.repository';
 
@@ -17,6 +14,8 @@ export interface ListDestinationsParams {
   country?: string;
   featureIds?: string[];
 }
+
+type DestinationWithRawFeatures = NonNullable<Awaited<ReturnType<typeof findDestinationById>>>;
 
 function withLeanFeatures<T extends DestinationWithRawFeatures>(destination: T) {
   const { features, interactions, ...rest } = destination;
@@ -35,32 +34,7 @@ function withLeanFeatures<T extends DestinationWithRawFeatures>(destination: T) 
 }
 
 export async function getAllDestinations({ limit, offset, country, featureIds }: ListDestinationsParams) {
-  const conditions: Prisma.DestinationWhereInput[] = [];
-  if (country) conditions.push({ country });
-  if (featureIds && featureIds.length > 0) {
-    const features = await findFeatureCategories(featureIds);
-    const featureCategories = new Map(features.map((feature) => [feature.id, feature.categoryId]));
-    const featureIdsByCategory = new Map<string, string[]>();
-
-    for (const featureId of featureIds) {
-      const categoryId = featureCategories.get(featureId) ?? `unknown:${featureId}`;
-      const selectedIds = featureIdsByCategory.get(categoryId) ?? [];
-      selectedIds.push(featureId);
-      featureIdsByCategory.set(categoryId, selectedIds);
-    }
-
-    conditions.push(
-      ...[...featureIdsByCategory.values()].map((selectedIds) => ({
-        features: { some: { featureId: { in: selectedIds } } },
-      })),
-    );
-  }
-  const where = conditions.length > 0 ? { AND: conditions } : undefined;
-
-  const [items, total] = await Promise.all([
-    findDestinations(where),
-    countDestinations(where),
-  ]);
+  const { items, total } = await findDestinations({ country, featureIds });
 
   const rankedItems = items
     .map(withLeanFeatures)
@@ -75,7 +49,7 @@ export async function getDestinationById(id: string) {
   return destination ? withLeanFeatures(destination) : null;
 }
 
-export async function createDestination(data: { slug: string; country: string; latitude: number; longitude: number; translations: Prisma.InputJsonValue; }) {
+export async function createDestination(data: CreateDestinationData) {
   return insertDestination(data);
 }
 
