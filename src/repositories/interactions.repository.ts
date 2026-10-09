@@ -17,6 +17,10 @@ export async function replaceInteraction(
   value?: number,
 ) {
   return prisma.$transaction(async (transaction) => {
+    const lockKey = JSON.stringify([userId, destinationId, type]);
+    await transaction.$queryRaw`
+      SELECT pg_advisory_xact_lock(hashtextextended(${lockKey}, 0))
+    `;
     await transaction.interaction.deleteMany({ where: { userId, destinationId, type } });
     return transaction.interaction.create({ data: { userId, destinationId, type, value } });
   });

@@ -47,6 +47,8 @@ function assertDestinationDatesWithinTrip(
 ): void {
   if (
     (trip.startDate && plannedDateStart && plannedDateStart < trip.startDate) ||
+    (trip.startDate && plannedDateEnd && plannedDateEnd < trip.startDate) ||
+    (trip.endDate && plannedDateStart && plannedDateStart > trip.endDate) ||
     (trip.endDate && plannedDateEnd && plannedDateEnd > trip.endDate)
   ) {
     throw new Error('DESTINATION_DATES_OUTSIDE_TRIP');
@@ -162,6 +164,8 @@ export async function updateTrip(
   const destinations = await findTripDestinationDateRanges(tripId);
   const hasDestinationOutsideRange = destinations.some((destination) =>
     (nextStartDate && destination.plannedDateStart && destination.plannedDateStart < nextStartDate) ||
+    (nextStartDate && destination.plannedDateEnd && destination.plannedDateEnd < nextStartDate) ||
+    (nextEndDate && destination.plannedDateStart && destination.plannedDateStart > nextEndDate) ||
     (nextEndDate && destination.plannedDateEnd && destination.plannedDateEnd > nextEndDate),
   );
   if (hasDestinationOutsideRange) {

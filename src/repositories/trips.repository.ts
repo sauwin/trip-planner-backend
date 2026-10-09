@@ -96,7 +96,25 @@ export async function updateTripDestination(
 }
 
 export async function deleteTripDestination(tripId: string, destinationId: string) {
-  return prisma.tripDestination.deleteMany({ where: { tripId, destinationId } });
+  return prisma.$transaction(async (transaction) => {
+    const deleted = await transaction.tripDestination.deleteMany({ where: { tripId, destinationId } });
+    if (deleted.count === 0) return deleted;
+
+    const remaining = await transaction.tripDestination.findMany({
+      where: { tripId },
+      orderBy: [{ position: 'asc' }, { destinationId: 'asc' }],
+      select: { destinationId: true },
+    });
+
+    for (const [position, { destinationId: remainingDestinationId }] of remaining.entries()) {
+      await transaction.tripDestination.update({
+        where: { tripId_destinationId: { tripId, destinationId: remainingDestinationId } },
+        data: { position },
+      });
+    }
+
+    return deleted;
+  });
 }
 
 export async function findTripDestinationDateRanges(tripId: string) {
