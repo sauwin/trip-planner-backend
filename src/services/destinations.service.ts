@@ -6,6 +6,7 @@ import {
   findDestinationById,
   findDestinations,
   findSavedDestinations as querySavedDestinations,
+  searchDestinations as queryDestinationSearch,
 } from '../repositories/destinations.repository';
 
 export interface ListDestinationsParams {
@@ -41,6 +42,10 @@ export async function getAllDestinations({ limit, offset, country, featureIds }:
     .sort((a, b) => b.popularityScore - a.popularityScore);
 
   return { items: rankedItems.slice(offset, offset + limit), total, limit, offset };
+}
+
+export async function searchDestinations(query: string, limit: number, locale: string) {
+  return queryDestinationSearch(query, limit, locale);
 }
 
 export async function getDestinationById(id: string) {

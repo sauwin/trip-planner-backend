@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
-import { getAllDestinations, getDestinationById, createDestination, deleteDestination, getSavedDestinations } from '../services/destinations.service';
+import { getAllDestinations, getDestinationById, createDestination, deleteDestination, getSavedDestinations, searchDestinations as searchDestinationRecords } from '../services/destinations.service';
 import { AuthenticatedRequest } from '../middleware/auth.middleware';
-import { ListDestinationsQuery } from '../schemas/destinations.schema';
+import { ListDestinationsQuery, SearchDestinationsQuery } from '../schemas/destinations.schema';
 import { getErrorCode } from '../lib/serviceErrors';
 
 export async function listDestinations(req: Request, res: Response) {
@@ -12,6 +12,17 @@ export async function listDestinations(req: Request, res: Response) {
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Failed to fetch destinations' });
+  }
+}
+
+export async function searchDestinations(req: Request, res: Response) {
+  try {
+    const { q, limit, locale } = (req as Request & { validatedQuery: SearchDestinationsQuery }).validatedQuery;
+    const items = await searchDestinationRecords(q, limit, locale);
+    res.json({ items });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to search destinations' });
   }
 }
 

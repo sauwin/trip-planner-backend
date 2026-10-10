@@ -31,4 +31,11 @@ export const listDestinationsQuerySchema = z.object({
   featureIds: featureIdsSchema,
 });
 
+export const searchDestinationsQuerySchema = z.object({
+  q: z.string().trim().min(2).max(80).regex(/^[\p{L}\p{N}\s'’.-]+$/u),
+  limit: z.coerce.number().int().min(1).max(50).optional().default(8),
+  locale: z.enum(['en', 'sk']).optional().default('en'),
+});
+
 export type ListDestinationsQuery = z.infer<typeof listDestinationsQuerySchema>;
+export type SearchDestinationsQuery = z.infer<typeof searchDestinationsQuerySchema>;
