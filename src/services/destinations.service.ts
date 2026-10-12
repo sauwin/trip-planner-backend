@@ -3,6 +3,7 @@ import {
   createDestination as insertDestination,
   CreateDestinationData,
   deleteDestination as removeDestination,
+  updateDestination as updateDestinationRecord,
   findDestinationById,
   findDestinations,
   findSavedDestinations as querySavedDestinations,
@@ -56,6 +57,10 @@ export async function getDestinationById(id: string) {
 
 export async function createDestination(data: CreateDestinationData) {
   return insertDestination(data);
+}
+
+export async function updateDestination(id: string, data: CreateDestinationData) {
+  return updateDestinationRecord(id, data);
 }
 
 export async function deleteDestination(id: string) {

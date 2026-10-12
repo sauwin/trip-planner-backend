@@ -13,6 +13,8 @@ import preferencesRouter from './routes/preferences.routes';
 import recommendationRouter from './routes/recommendation.routes';
 import interactionsRouter from './routes/interactions.routes';
 import tripsRouter from './routes/trips.routes';
+import adminRouter from './routes/admin.routes';
+import { bootstrapSuperAdmin } from './services/auth.service';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -30,6 +32,7 @@ app.use('/api/preferences', preferencesRouter);
 app.use('/api/recommendations', recommendationRouter);
 app.use('/api/interactions', interactionsRouter);
 app.use('/api/trips', tripsRouter);
+app.use('/api/admin', adminRouter);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok' });
@@ -38,6 +41,14 @@ app.get('/api/health', (req, res) => {
 app.use(notFoundHandler);
 app.use(errorHandler);
 
-app.listen(PORT, () => {
-  console.log(`Server: http://localhost:${PORT}`);
+async function startServer() {
+  await bootstrapSuperAdmin();
+  app.listen(PORT, () => {
+    console.log(`Server: http://localhost:${PORT}`);
+  });
+}
+
+startServer().catch((error) => {
+  console.error('Failed to start server', error);
+  process.exitCode = 1;
 });

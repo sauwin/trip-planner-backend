@@ -1,9 +1,12 @@
 import { Request, Response, NextFunction } from 'express';
 import { verifyAccessToken } from '../lib/jwt';
+import { findUserSession } from '../repositories/auth.repository';
+
+export type UserRole = 'USER' | 'ADMIN' | 'SUPER_ADMIN';
 
 export interface AuthenticatedRequest extends Request {
   userId?: string;
-  userRole?: 'USER' | 'ADMIN';
+  userRole?: UserRole;
 }
 
 export async function requireAuth(req: AuthenticatedRequest, res: Response, next: NextFunction) {
@@ -22,7 +25,7 @@ export async function requireAuth(req: AuthenticatedRequest, res: Response, next
       !payload ||
       typeof payload.sub !== 'string' ||
       payload.sub.length === 0 ||
-      (payload.role !== 'USER' && payload.role !== 'ADMIN')
+      (payload.role !== 'USER' && payload.role !== 'ADMIN' && payload.role !== 'SUPER_ADMIN')
     ) {
       throw new Error('Invalid token subject');
     }
@@ -35,16 +38,29 @@ export async function requireAuth(req: AuthenticatedRequest, res: Response, next
   }
 }
 
-export async function requireAdmin(req: AuthenticatedRequest, res: Response, next: NextFunction) {
-  if (!req.userId) {
-    res.status(401).json({ error: 'Missing or invalid Authorization header' });
-    return;
-  }
+export function requireRole(...allowedRoles: UserRole[]) {
+  return async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    if (!req.userId) {
+      res.status(401).json({ error: 'Missing or invalid Authorization header' });
+      return;
+    }
 
-  if (req.userRole !== 'ADMIN') {
-    res.status(403).json({ error: 'Admin access required' });
-    return;
-  }
+    try {
+      const user = await findUserSession(req.userId);
+      if (!user) {
+        res.status(401).json({ error: 'User not found' });
+        return;
+      }
 
-  next();
+      req.userRole = user.role;
+      if (!allowedRoles.includes(user.role)) {
+        res.status(403).json({ error: 'Insufficient role' });
+        return;
+      }
+
+      next();
+    } catch (error) {
+      next(error);
+    }
+  };
 }

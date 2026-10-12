@@ -4,14 +4,28 @@ export async function findUserByEmail(email: string) {
   return prisma.user.findUnique({ where: { email } });
 }
 
-export async function createUser(email: string, passwordHash: string) {
-  return prisma.user.create({ data: { email, passwordHash } });
+export async function createUser(email: string, passwordHash: string, name: string | undefined, role: 'USER' | 'SUPER_ADMIN') {
+  return prisma.user.create({ data: { email, passwordHash, name, role } });
 }
 
 export async function findUserSession(id: string) {
   return prisma.user.findUnique({
     where: { id },
     select: { role: true, sessionVersion: true },
+  });
+}
+
+export async function findUserProfile(id: string) {
+  return prisma.user.findUnique({
+    where: { id },
+    select: { id: true, email: true, name: true, role: true },
+  });
+}
+
+export async function promoteBootstrapUser(email: string) {
+  return prisma.user.updateMany({
+    where: { email, role: { not: 'SUPER_ADMIN' } },
+    data: { role: 'SUPER_ADMIN', sessionVersion: { increment: 1 } },
   });
 }
 

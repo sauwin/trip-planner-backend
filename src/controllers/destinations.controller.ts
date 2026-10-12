@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { getAllDestinations, getDestinationById, createDestination, deleteDestination, getSavedDestinations, searchDestinations as searchDestinationRecords } from '../services/destinations.service';
+import { getAllDestinations, getDestinationById, createDestination, updateDestination, deleteDestination, getSavedDestinations, searchDestinations as searchDestinationRecords } from '../services/destinations.service';
 import { AuthenticatedRequest } from '../middleware/auth.middleware';
 import { ListDestinationsQuery, SearchDestinationsQuery } from '../schemas/destinations.schema';
 import { getErrorCode } from '../lib/serviceErrors';
@@ -47,27 +47,47 @@ export async function getDestination(req: Request, res: Response) {
 
 export async function createDestinationHandler(req: AuthenticatedRequest, res: Response) {
   try {
-    const { slug, country, latitude, longitude, translations } = req.body;
-    if (!slug || !country || latitude === undefined || longitude === undefined) {
-      res.status(400).json({ error: 'slug, country, latitude and longitude are required' });
-      return;
-    }
-
-    const destination = await createDestination({
-      slug,
-      country,
-      latitude,
-      longitude,
-      translations: translations || {},
-    });
+    const destination = await createDestination(req.body);
     res.status(201).json(destination);
   } catch (error: unknown) {
     if (getErrorCode(error) === 'P2002') {
       res.status(409).json({ error: 'Destination with this slug already exists' });
       return;
     }
+    if (error instanceof Error && error.message === 'INVALID_DESTINATION_FEATURES') {
+      res.status(400).json({ error: 'Destination contains unknown features' });
+      return;
+    }
     console.error(error);
     res.status(500).json({ error: 'Failed to create destination' });
+  }
+}
+
+export async function updateDestinationHandler(req: AuthenticatedRequest, res: Response) {
+  try {
+    const { id } = req.params;
+    if (typeof id !== 'string') {
+      res.status(400).json({ error: 'Invalid id' });
+      return;
+    }
+
+    const destination = await updateDestination(id, req.body);
+    res.json(destination);
+  } catch (error: unknown) {
+    if (getErrorCode(error) === 'P2002') {
+      res.status(409).json({ error: 'Destination with this slug already exists' });
+      return;
+    }
+    if (getErrorCode(error) === 'P2025') {
+      res.status(404).json({ error: 'Destination not found' });
+      return;
+    }
+    if (error instanceof Error && error.message === 'INVALID_DESTINATION_FEATURES') {
+      res.status(400).json({ error: 'Destination contains unknown features' });
+      return;
+    }
+    console.error(error);
+    res.status(500).json({ error: 'Failed to update destination' });
   }
 }
 

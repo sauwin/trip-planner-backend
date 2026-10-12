@@ -1,5 +1,6 @@
 import { prisma } from '../lib/prisma';
 import { Prisma } from '../generated/prisma/client';
+import { recommendationFeatureKeys } from '../data/recommendationCatalog';
 
 export const DESTINATION_FEATURES_INCLUDE = {
   features: { include: { feature: { include: { category: true } } } },
@@ -141,10 +142,54 @@ export interface CreateDestinationData {
   latitude: number;
   longitude: number;
   translations: Prisma.InputJsonValue;
+  features: Array<{ featureId: string; weight: number }>;
 }
 
-export async function createDestination(data: CreateDestinationData) {
-  return prisma.destination.create({ data });
+async function assertKnownFeatures(
+  transaction: Prisma.TransactionClient,
+  features: CreateDestinationData['features'],
+) {
+  const allowedKeys = new Set<string>(recommendationFeatureKeys);
+  const knownFeatures = await transaction.feature.findMany({
+    where: { id: { in: features.map(({ featureId }) => featureId) }, key: { in: [...allowedKeys] } },
+    select: { id: true },
+  });
+  if (knownFeatures.length !== features.length) {
+    throw new Error('INVALID_DESTINATION_FEATURES');
+  }
+}
+
+export async function createDestination({ features, ...data }: CreateDestinationData) {
+  return prisma.$transaction(async (transaction) => {
+    await assertKnownFeatures(transaction, features);
+    const destination = await transaction.destination.create({ data });
+    if (features.length > 0) {
+      await transaction.destinationFeature.createMany({
+        data: features.map((feature) => ({ ...feature, destinationId: destination.id })),
+      });
+    }
+    return transaction.destination.findUniqueOrThrow({
+      where: { id: destination.id },
+      include: DESTINATION_FEATURES_INCLUDE,
+    });
+  });
+}
+
+export async function updateDestination(id: string, { features, ...data }: CreateDestinationData) {
+  return prisma.$transaction(async (transaction) => {
+    await assertKnownFeatures(transaction, features);
+    await transaction.destination.update({ where: { id }, data });
+    await transaction.destinationFeature.deleteMany({ where: { destinationId: id } });
+    if (features.length > 0) {
+      await transaction.destinationFeature.createMany({
+        data: features.map((feature) => ({ ...feature, destinationId: id })),
+      });
+    }
+    return transaction.destination.findUniqueOrThrow({
+      where: { id },
+      include: DESTINATION_FEATURES_INCLUDE,
+    });
+  });
 }
 
 export async function deleteDestination(id: string) {

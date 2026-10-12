@@ -10,11 +10,13 @@ datasource db {
 enum UserRole {
   USER
   ADMIN
+  SUPER_ADMIN
 }
 
 model User {
   id           String   @id @default(uuid())
   email        String   @unique
+  name         String?
   passwordHash   String
   sessionVersion Int     @default(0)
   role         UserRole @default(USER)

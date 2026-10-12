@@ -18,16 +18,16 @@ const JWT_AUDIENCE = 'trip-planner-api';
 
 export interface AccessTokenPayload {
   sub: string;
-  role: 'USER' | 'ADMIN';
+  role: 'USER' | 'ADMIN' | 'SUPER_ADMIN';
 }
 
 export interface RefreshTokenPayload {
   sub: string;
-  role: 'USER' | 'ADMIN';
+  role: 'USER' | 'ADMIN' | 'SUPER_ADMIN';
   sessionVersion: number;
 }
 
-export function signAccessToken(userId: string, role: 'USER' | 'ADMIN'): string {
+export function signAccessToken(userId: string, role: AccessTokenPayload['role']): string {
   return jwt.sign({ sub: userId, role }, ACCESS_SECRET, {
     algorithm: 'HS256',
     audience: JWT_AUDIENCE,
@@ -36,7 +36,7 @@ export function signAccessToken(userId: string, role: 'USER' | 'ADMIN'): string 
   });
 }
 
-export function signRefreshToken(userId: string, role: 'USER' | 'ADMIN', sessionVersion: number): string {
+export function signRefreshToken(userId: string, role: RefreshTokenPayload['role'], sessionVersion: number): string {
   return jwt.sign({ sub: userId, role, sessionVersion }, REFRESH_SECRET, {
     algorithm: 'HS256',
     audience: JWT_AUDIENCE,

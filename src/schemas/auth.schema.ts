@@ -12,6 +12,7 @@ const strongPasswordSchema = z
 
 export const registerSchema = z.object({
   email: z.string().trim().toLowerCase().email('Invalid email format'),
+  name: z.string().trim().min(1).max(100).optional(),
   password: strongPasswordSchema,
 });
 

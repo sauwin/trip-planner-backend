@@ -7,8 +7,10 @@ import {
   createUser,
   deletePasswordResetToken,
   findUserByEmail,
+  findUserProfile,
   findUserSession,
   incrementUserSessionVersion,
+  promoteBootstrapUser,
   replacePasswordResetToken,
   resetPasswordWithToken,
 } from '../repositories/auth.repository';
@@ -17,16 +19,32 @@ const SALT_ROUNDS = 10;
 const PASSWORD_RESET_EXPIRES_MIN = Number(process.env.PASSWORD_RESET_EXPIRES_MIN) || 30;
 const PASSWORD_RESET_EXPIRES_MS = PASSWORD_RESET_EXPIRES_MIN * 60 * 1000;
 
-export async function registerUser(email: string, password: string) {
+export async function registerUser(email: string, password: string, name?: string) {
   const existing = await findUserByEmail(email);
   if (existing) {
     throw new Error('EMAIL_TAKEN');
   }
 
   const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
-  const user = await createUser(email, passwordHash);
+  const bootstrapEmail = process.env.SUPER_ADMIN_EMAIL?.trim().toLowerCase();
+  const role = bootstrapEmail && email.toLowerCase() === bootstrapEmail ? 'SUPER_ADMIN' : 'USER';
+  const user = await createUser(email, passwordHash, name, role);
 
   return issueTokenPair(user.id);
+}
+
+export async function bootstrapSuperAdmin() {
+  const email = process.env.SUPER_ADMIN_EMAIL?.trim().toLowerCase();
+  if (!email) return;
+
+  const result = await promoteBootstrapUser(email);
+  if (result.count > 0) {
+    console.log(`Configured super admin access for ${email}.`);
+  }
+}
+
+export async function getAuthenticatedUser(userId: string) {
+  return findUserProfile(userId);
 }
 
 export async function loginUser(email: string, password: string) {
@@ -50,7 +68,7 @@ export async function refreshTokens(refreshToken: string) {
   if (
     !payload ||
     typeof payload.sub !== 'string' ||
-    (payload.role !== 'USER' && payload.role !== 'ADMIN') ||
+    (payload.role !== 'USER' && payload.role !== 'ADMIN' && payload.role !== 'SUPER_ADMIN') ||
     !Number.isInteger(payload.sessionVersion) ||
     payload.sessionVersion < 0
   ) {

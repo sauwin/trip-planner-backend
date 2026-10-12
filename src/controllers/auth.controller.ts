@@ -6,14 +6,16 @@ import {
   logoutUser,
   requestPasswordReset,
   resetPassword,
+  getAuthenticatedUser,
 } from '../services/auth.service';
+import { AuthenticatedRequest } from '../middleware/auth.middleware';
 import { getErrorMessage } from '../lib/serviceErrors';
 
 export async function register(req: Request, res: Response) {
   try {
-    const { email, password } = req.body;
+    const { email, password, name } = req.body;
 
-    const tokens = await registerUser(email, password);
+    const tokens = await registerUser(email, password, name);
     res.status(201).json(tokens);
   } catch (error: unknown) {
     if (getErrorMessage(error) === 'EMAIL_TAKEN') {
@@ -22,6 +24,20 @@ export async function register(req: Request, res: Response) {
     }
     console.error(error);
     res.status(500).json({ error: 'Registration failed' });
+  }
+}
+
+export async function currentUser(req: AuthenticatedRequest, res: Response) {
+  try {
+    const user = await getAuthenticatedUser(req.userId!);
+    if (!user) {
+      res.status(401).json({ error: 'User not found' });
+      return;
+    }
+    res.json(user);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to fetch current user' });
   }
 }
 

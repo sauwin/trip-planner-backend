@@ -1,12 +1,33 @@
 import { z } from 'zod';
 
+const destinationTranslationSchema = z.object({
+  name: z.string().trim().min(1).max(120),
+  description: z.string().trim().min(1).max(5000),
+}).passthrough();
+
+const translationsSchema = z.record(z.string(), destinationTranslationSchema).refine(
+  (translations) => Boolean(translations.en && translations.sk),
+  'English and Slovak translations are required',
+);
+
+const destinationFeaturesSchema = z.array(z.object({
+  featureId: z.string().uuid(),
+  weight: z.number().min(0).max(1),
+})).refine(
+  (features) => new Set(features.map(({ featureId }) => featureId)).size === features.length,
+  'Destination features must be unique',
+);
+
 export const createDestinationSchema = z.object({
-  slug: z.string().min(1, 'slug is required'),
-  country: z.string().min(1, 'country is required'),
+  slug: z.string().trim().min(1, 'slug is required').max(120).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
+  country: z.string().trim().min(1, 'country is required').max(100),
   latitude: z.number().min(-90).max(90),
   longitude: z.number().min(-180).max(180),
-  translations: z.record(z.string(), z.unknown()).optional().default({}),
+  translations: translationsSchema,
+  features: destinationFeaturesSchema,
 });
+
+export const updateDestinationSchema = createDestinationSchema;
 
 export const deleteDestinationSchema = z.object({
   id: z.string().uuid('id must be a valid UUID'),

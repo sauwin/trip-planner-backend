@@ -6,7 +6,9 @@ import {
   logout,
   forgotPassword,
   resetPasswordHandler,
+  currentUser,
 } from '../controllers/auth.controller';
+import { requireAuth } from '../middleware/auth.middleware';
 import { validateBody } from '../middleware/validate';
 import {
   registerSchema,
@@ -25,6 +27,7 @@ import {
 
 const router = Router();
 
+router.get('/me', requireAuth, currentUser);
 router.post('/register', authRateLimit, validateBody(registerSchema), register);
 router.post('/login', authRateLimit, validateBody(loginSchema), login);
 router.post('/refresh', authRateLimit, validateBody(refreshSchema), refresh);
