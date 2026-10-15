@@ -9,7 +9,7 @@ import {
   getAuthenticatedUser,
 } from '../services/auth.service';
 import { AuthenticatedRequest } from '../middleware/auth.middleware';
-import { getErrorMessage } from '../lib/serviceErrors';
+import { handleServiceError } from '../lib/serviceErrors';
 
 export async function register(req: Request, res: Response) {
   try {
@@ -18,12 +18,9 @@ export async function register(req: Request, res: Response) {
     const tokens = await registerUser(email, password, name);
     res.status(201).json(tokens);
   } catch (error: unknown) {
-    if (getErrorMessage(error) === 'EMAIL_TAKEN') {
-      res.status(409).json({ error: 'Email already registered' });
-      return;
-    }
-    console.error(error);
-    res.status(500).json({ error: 'Registration failed' });
+    handleServiceError(error, res, 'Registration failed', {
+      EMAIL_TAKEN: { status: 409, message: 'Email already registered' },
+    });
   }
 }
 
@@ -36,8 +33,7 @@ export async function currentUser(req: AuthenticatedRequest, res: Response) {
     }
     res.json(user);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Failed to fetch current user' });
+    handleServiceError(error, res, 'Failed to fetch current user');
   }
 }
 
@@ -48,12 +44,9 @@ export async function login(req: Request, res: Response) {
     const tokens = await loginUser(email, password);
     res.json(tokens);
   } catch (error: unknown) {
-    if (getErrorMessage(error) === 'INVALID_CREDENTIALS') {
-      res.status(401).json({ error: 'Invalid email or password' });
-      return;
-    }
-    console.error(error);
-    res.status(500).json({ error: 'Login failed' });
+    handleServiceError(error, res, 'Login failed', {
+      INVALID_CREDENTIALS: { status: 401, message: 'Invalid email or password' },
+    });
   }
 }
 
@@ -68,12 +61,9 @@ export async function refresh(req: Request, res: Response) {
     const tokens = await refreshTokens(refreshToken);
     res.json(tokens);
   } catch (error: unknown) {
-    if (getErrorMessage(error) === 'INVALID_REFRESH_TOKEN') {
-      res.status(401).json({ error: 'Invalid or expired refresh token' });
-      return;
-    }
-    console.error(error);
-    res.status(500).json({ error: 'Refresh failed' });
+    handleServiceError(error, res, 'Refresh failed', {
+      INVALID_REFRESH_TOKEN: { status: 401, message: 'Invalid or expired refresh token' },
+    });
   }
 }
 
@@ -94,12 +84,9 @@ export async function resetPasswordHandler(req: Request, res: Response) {
     await resetPassword(token, newPassword);
     res.json({ message: 'Password has been reset successfully' });
   } catch (error: unknown) {
-    if (getErrorMessage(error) === 'INVALID_RESET_TOKEN') {
-      res.status(400).json({ error: 'Reset link is invalid or has expired' });
-      return;
-    }
-    console.error(error);
-    res.status(500).json({ error: 'Failed to reset password' });
+    handleServiceError(error, res, 'Failed to reset password', {
+      INVALID_RESET_TOKEN: { status: 400, message: 'Reset link is invalid or has expired' },
+    });
   }
 }
 
@@ -111,7 +98,6 @@ export async function logout(req: Request, res: Response) {
     }
     res.status(204).send();
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Logout failed' });
+    handleServiceError(error, res, 'Logout failed');
   }
 }

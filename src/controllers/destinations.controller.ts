@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import { getAllDestinations, getDestinationById, createDestination, updateDestination, deleteDestination, getSavedDestinations, searchDestinations as searchDestinationRecords } from '../services/destinations.service';
 import { AuthenticatedRequest } from '../middleware/auth.middleware';
 import { ListDestinationsQuery, SearchDestinationsQuery } from '../schemas/destinations.schema';
-import { getErrorCode } from '../lib/serviceErrors';
+import { handleServiceError } from '../lib/serviceErrors';
 
 export async function listDestinations(req: Request, res: Response) {
   try {
@@ -10,8 +10,7 @@ export async function listDestinations(req: Request, res: Response) {
     const result = await getAllDestinations({ limit, offset, country, featureIds });
     res.json(result);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Failed to fetch destinations' });
+    handleServiceError(error, res, 'Failed to fetch destinations');
   }
 }
 
@@ -21,8 +20,7 @@ export async function searchDestinations(req: Request, res: Response) {
     const items = await searchDestinationRecords(q, limit, locale);
     res.json({ items });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Failed to search destinations' });
+    handleServiceError(error, res, 'Failed to search destinations');
   }
 }
 
@@ -40,8 +38,7 @@ export async function getDestination(req: Request, res: Response) {
     }
     res.json(destination);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Failed to fetch destination' });
+    handleServiceError(error, res, 'Failed to fetch destination');
   }
 }
 
@@ -50,16 +47,10 @@ export async function createDestinationHandler(req: AuthenticatedRequest, res: R
     const destination = await createDestination(req.body);
     res.status(201).json(destination);
   } catch (error: unknown) {
-    if (getErrorCode(error) === 'P2002') {
-      res.status(409).json({ error: 'Destination with this slug already exists' });
-      return;
-    }
-    if (error instanceof Error && error.message === 'INVALID_DESTINATION_FEATURES') {
-      res.status(400).json({ error: 'Destination contains unknown features' });
-      return;
-    }
-    console.error(error);
-    res.status(500).json({ error: 'Failed to create destination' });
+    handleServiceError(error, res, 'Failed to create destination', {
+      P2002: { status: 409, message: 'Destination with this slug already exists' },
+      INVALID_DESTINATION_FEATURES: { status: 400, message: 'Destination contains unknown features' },
+    });
   }
 }
 
@@ -74,20 +65,11 @@ export async function updateDestinationHandler(req: AuthenticatedRequest, res: R
     const destination = await updateDestination(id, req.body);
     res.json(destination);
   } catch (error: unknown) {
-    if (getErrorCode(error) === 'P2002') {
-      res.status(409).json({ error: 'Destination with this slug already exists' });
-      return;
-    }
-    if (getErrorCode(error) === 'P2025') {
-      res.status(404).json({ error: 'Destination not found' });
-      return;
-    }
-    if (error instanceof Error && error.message === 'INVALID_DESTINATION_FEATURES') {
-      res.status(400).json({ error: 'Destination contains unknown features' });
-      return;
-    }
-    console.error(error);
-    res.status(500).json({ error: 'Failed to update destination' });
+    handleServiceError(error, res, 'Failed to update destination', {
+      P2002: { status: 409, message: 'Destination with this slug already exists' },
+      P2025: { status: 404, message: 'Destination not found' },
+      INVALID_DESTINATION_FEATURES: { status: 400, message: 'Destination contains unknown features' },
+    });
   }
 }
 
@@ -102,12 +84,9 @@ export async function deleteDestinationHandler(req: AuthenticatedRequest, res: R
     await deleteDestination(id);
     res.status(204).send();
   } catch (error: unknown) {
-    if (getErrorCode(error) === 'P2025') {
-      res.status(404).json({ error: 'Destination not found' });
-      return;
-    }
-    console.error(error);
-    res.status(500).json({ error: 'Failed to delete destination' });
+    handleServiceError(error, res, 'Failed to delete destination', {
+      P2025: { status: 404, message: 'Destination not found' },
+    });
   }
 }
 
@@ -116,7 +95,6 @@ export async function getSavedDestination(req: AuthenticatedRequest, res: Respon
     const savedDestinations = await getSavedDestinations(req.userId!);
     res.status(200).json(savedDestinations);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Failed to fetch saved destinations' }); 
+    handleServiceError(error, res, 'Failed to fetch saved destinations');
   }
 }

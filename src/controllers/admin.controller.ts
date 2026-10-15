@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { AuthenticatedRequest } from '../middleware/auth.middleware';
 import { changeManagedUserRole, searchManagedUsers } from '../services/admin.service';
-import { getErrorMessage } from '../lib/serviceErrors';
+import { handleServiceError } from '../lib/serviceErrors';
 
 export async function listManagedUsers(req: Request, res: Response) {
   try {
@@ -9,8 +9,7 @@ export async function listManagedUsers(req: Request, res: Response) {
     const users = await searchManagedUsers(q);
     res.json({ items: users });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Failed to search users' });
+    handleServiceError(error, res, 'Failed to search users');
   }
 }
 
@@ -25,20 +24,11 @@ export async function updateManagedUser(req: AuthenticatedRequest, res: Response
     const user = await changeManagedUserRole(req.userId!, id, req.body.role);
     res.json(user);
   } catch (error) {
-    const code = getErrorMessage(error);
-    if (code === 'USER_NOT_FOUND') {
-      res.status(404).json({ error: 'User not found' });
-      return;
-    }
-    if (code === 'CANNOT_CHANGE_SELF') {
-      res.status(400).json({ error: 'You cannot change your own role' });
-      return;
-    }
-    if (code === 'LAST_SUPER_ADMIN' || code === 'SUPER_ADMIN_MANAGEMENT_DISABLED') {
-      res.status(400).json({ error: 'Super admin roles cannot be changed here' });
-      return;
-    }
-    console.error(error);
-    res.status(500).json({ error: 'Failed to update user role' });
+    handleServiceError(error, res, 'Failed to update user role', {
+      USER_NOT_FOUND: { status: 404, message: 'User not found' },
+      CANNOT_CHANGE_SELF: { status: 400, message: 'You cannot change your own role' },
+      LAST_SUPER_ADMIN: { status: 400, message: 'Super admin roles cannot be changed here' },
+      SUPER_ADMIN_MANAGEMENT_DISABLED: { status: 400, message: 'Super admin roles cannot be changed here' },
+    });
   }
 }

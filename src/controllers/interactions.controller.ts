@@ -2,7 +2,7 @@ import { Response } from 'express';
 import { AuthenticatedRequest } from '../middleware/auth.middleware';
 import { recordInteraction, removeInteraction, getUserInteractions, getDestinationStatus } from '../services/interactions.service';
 import { InteractionType } from '../generated/prisma/client';
-import { getErrorCode, getErrorMessage } from '../lib/serviceErrors';
+import { handleServiceError } from '../lib/serviceErrors';
 
 const VALID_TYPES = Object.values(InteractionType);
 
@@ -18,12 +18,9 @@ export async function recordInteractionHandler(req: AuthenticatedRequest, res: R
     const interaction = await recordInteraction(req.userId!, destinationId, type, value);
     res.status(201).json(interaction);
   } catch (error: unknown) {
-    if (getErrorCode(error) === 'P2003') {
-      res.status(404).json({ error: 'Destination not found' });
-      return;
-    }
-    console.error(error);
-    res.status(500).json({ error: 'Failed to record interaction' });
+    handleServiceError(error, res, 'Failed to record interaction', {
+      P2003: { status: 404, message: 'Destination not found' },
+    });
   }
 }
 
@@ -39,12 +36,9 @@ export async function removeInteractionHandler(req: AuthenticatedRequest, res: R
     await removeInteraction(req.userId!, destinationId as string, type as InteractionType);
     res.status(204).send();
   } catch (error: unknown) {
-    if (getErrorMessage(error) === 'NOT_REMOVABLE') {
-      res.status(400).json({ error: 'This interaction type cannot be removed' });
-      return;
-    }
-    console.error(error);
-    res.status(500).json({ error: 'Failed to remove interaction' });
+    handleServiceError(error, res, 'Failed to remove interaction', {
+      NOT_REMOVABLE: { status: 400, message: 'This interaction type cannot be removed' },
+    });
   }
 }
 
@@ -53,8 +47,7 @@ export async function listInteractions(req: AuthenticatedRequest, res: Response)
     const interactions = await getUserInteractions(req.userId!);
     res.json(interactions);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Failed to fetch interactions' });
+    handleServiceError(error, res, 'Failed to fetch interactions');
   }
 }
 
@@ -64,7 +57,6 @@ export async function getDestinationStatusHandler(req: AuthenticatedRequest, res
     const status = await getDestinationStatus(req.userId!, destinationId as string);
     res.json(status);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Failed to fetch interaction status' });
+    handleServiceError(error, res, 'Failed to fetch interaction status');
   }
 }

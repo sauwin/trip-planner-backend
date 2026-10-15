@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import { AuthenticatedRequest } from '../middleware/auth.middleware';
 import { saveUserPreferences, getUserPreferences } from '../services/preferences.service';
+import { handleServiceError } from '../lib/serviceErrors';
 
 export async function savePreferences(req: AuthenticatedRequest, res: Response) {
   try {
@@ -18,20 +19,11 @@ export async function savePreferences(req: AuthenticatedRequest, res: Response) 
     const saved = await saveUserPreferences(req.userId, preferences);
     res.json(saved);
   } catch (error) {
-    console.error('Error saving preferences:', error);
-    if (error instanceof Error && error.message === 'USER_NOT_FOUND') {
-      res.status(401).json({ error: 'User no longer exists. Please log in again.' });
-      return;
-    }
-    if (error instanceof Error && error.message === 'INVALID_PREFERENCES') {
-      res.status(400).json({ error: 'Each selected feature must belong to its category' });
-      return;
-    }
-    if (error instanceof Error && error.message === 'INCOMPLETE_PREFERENCES') {
-      res.status(400).json({ error: 'INCOMPLETE_PREFERENCES' });
-      return;
-    }
-    res.status(500).json({ error: 'Failed to save preferences' });
+    handleServiceError(error, res, 'Failed to save preferences', {
+      USER_NOT_FOUND: { status: 401, message: 'User no longer exists. Please log in again.' },
+      INVALID_PREFERENCES: { status: 400, message: 'Each selected feature must belong to its category' },
+      INCOMPLETE_PREFERENCES: { status: 400, message: 'INCOMPLETE_PREFERENCES' },
+    });
   }
 }
 
@@ -40,7 +32,6 @@ export async function getPreferences(req: AuthenticatedRequest, res: Response) {
     const preferences = await getUserPreferences(req.userId!);
     res.json(preferences);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Failed to fetch preferences' });
+    handleServiceError(error, res, 'Failed to fetch preferences');
   }
 }
