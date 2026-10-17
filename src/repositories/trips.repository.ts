@@ -54,8 +54,12 @@ export async function deleteTripRecord(tripId: string) {
   return prisma.trip.delete({ where: { id: tripId } });
 }
 
-export async function countTripDestinations(tripId: string) {
-  return prisma.tripDestination.count({ where: { tripId } });
+export async function getNextTripDestinationPosition(tripId: string) {
+  const result = await prisma.tripDestination.aggregate({
+    where: { tripId },
+    _max: { position: true },
+  });
+  return (result._max.position ?? -1) + 1;
 }
 
 export async function createTripDestination(data: {

@@ -1,10 +1,10 @@
 import { assertTripOwnership } from '../lib/tripOwnership';
 import {
-  countTripDestinations,
   createTripDestination,
   createTripRecord,
   deleteTripDestination,
   deleteTripRecord,
+  getNextTripDestinationPosition,
   findTripDateRangeForUser,
   findTripDestinationDateRanges,
   findTripDestinationDates,
@@ -102,12 +102,12 @@ export async function addDestinationToTrip(
     normalized.plannedDateEnd ?? null,
   );
 
-  const lastPosition = await countTripDestinations(tripId);
+  const position = await getNextTripDestinationPosition(tripId);
 
   return createTripDestination({
     tripId,
     destinationId,
-    position: lastPosition,
+    position,
     ...normalized,
   });
 }
