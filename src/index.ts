@@ -14,6 +14,7 @@ import recommendationRouter from './routes/recommendation.routes';
 import interactionsRouter from './routes/interactions.routes';
 import tripsRouter from './routes/trips.routes';
 import adminRouter from './routes/admin.routes';
+import reviewsRouter from './routes/reviews.routes';
 import { bootstrapSuperAdmin } from './services/auth.service';
 
 const app = express();
@@ -22,7 +23,7 @@ const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 
 app.use(helmet());
 app.use(cors({ origin: FRONTEND_URL }));
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
 app.use('/api', globalRateLimit);
 
 app.use('/api/auth', authRouter);
@@ -33,6 +34,7 @@ app.use('/api/recommendations', recommendationRouter);
 app.use('/api/interactions', interactionsRouter);
 app.use('/api/trips', tripsRouter);
 app.use('/api/admin', adminRouter);
+app.use('/api/reviews', reviewsRouter);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok' });

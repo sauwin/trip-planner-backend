@@ -20,8 +20,8 @@ export interface ListDestinationsParams {
 type DestinationWithRawFeatures = NonNullable<Awaited<ReturnType<typeof findDestinationById>>>;
 
 function withLeanFeatures<T extends DestinationWithRawFeatures>(destination: T) {
-  const { features, interactions, ...rest } = destination;
-  const popularityScore = computePopularityScore(interactions);
+  const { features, reviews, ...rest } = destination;
+  const popularityScore = computePopularityScore(reviews);
 
   return {
     ...rest,

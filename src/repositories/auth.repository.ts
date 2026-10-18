@@ -4,8 +4,8 @@ export async function findUserByEmail(email: string) {
   return prisma.user.findUnique({ where: { email } });
 }
 
-export async function createUser(email: string, passwordHash: string, name: string | undefined, role: 'USER' | 'SUPER_ADMIN') {
-  return prisma.user.create({ data: { email, passwordHash, name, role } });
+export async function createUser(email: string, passwordHash: string, username: string, role: 'USER' | 'SUPER_ADMIN') {
+  return prisma.user.create({ data: { email, passwordHash, name: username, role } });
 }
 
 export async function findUserSession(id: string) {

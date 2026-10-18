@@ -13,9 +13,9 @@ import { handleServiceError } from '../lib/serviceErrors';
 
 export async function register(req: Request, res: Response) {
   try {
-    const { email, password, name } = req.body;
+    const { email, password, username } = req.body;
 
-    const tokens = await registerUser(email, password, name);
+    const tokens = await registerUser(email, password, username);
     res.status(201).json(tokens);
   } catch (error: unknown) {
     handleServiceError(error, res, 'Registration failed', {
