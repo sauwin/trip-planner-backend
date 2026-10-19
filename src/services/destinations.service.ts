@@ -1,4 +1,3 @@
-import { computePopularityScore } from '../lib/popularity';
 import {
   createDestination as insertDestination,
   CreateDestinationData,
@@ -20,12 +19,10 @@ export interface ListDestinationsParams {
 type DestinationWithRawFeatures = NonNullable<Awaited<ReturnType<typeof findDestinationById>>>;
 
 function withLeanFeatures<T extends DestinationWithRawFeatures>(destination: T) {
-  const { features, reviews, ...rest } = destination;
-  const popularityScore = computePopularityScore(reviews);
+  const { features, ...rest } = destination;
 
   return {
     ...rest,
-    popularityScore,
     features: features.map((f) => ({
       featureId: f.featureId,
       key: f.feature.key,

@@ -108,7 +108,13 @@ export async function getRecommendationsForUser(
       weight: f.weight,
     }));
 
-    return { destination: { ...destinationData, features: featureViews }, score: normalizedScore };
+    return {
+      destination: {
+        ...destinationData,
+        features: featureViews,
+      },
+      score: normalizedScore,
+    };
   });
 
   const ranked = results

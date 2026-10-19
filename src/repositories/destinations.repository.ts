@@ -4,7 +4,6 @@ import { recommendationFeatureKeys } from '../data/recommendationCatalog';
 
 export const DESTINATION_FEATURES_INCLUDE = {
   features: { include: { feature: { include: { category: true } } } },
-  reviews: { select: { rating: true } },
 } satisfies Prisma.DestinationInclude;
 
 export interface DestinationFilters {

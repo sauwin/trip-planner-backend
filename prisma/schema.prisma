@@ -3,6 +3,10 @@ generator client {
   output   = "../src/generated/prisma"
 }
 
+generator erd {
+  provider = "prisma-erd-generator"
+}
+
 datasource db {
   provider = "postgresql"
 }
@@ -14,15 +18,13 @@ enum UserRole {
 }
 
 model User {
-  id           String   @id @default(uuid())
-  email        String   @unique
-  name         String?
+  id             String   @id @default(uuid())
+  email          String   @unique
+  name           String
   passwordHash   String
   sessionVersion Int     @default(0)
-  role         UserRole @default(USER)
-  country      String?
-  ageRange     String?
-  createdAt    DateTime @default(now())
+  role           UserRole @default(USER)
+  createdAt      DateTime @default(now())
 
   interactions        Interaction[]
   reviews             DestinationReview[]
@@ -33,14 +35,14 @@ model User {
 }
 
 model Destination {
-  id              String   @id @default(uuid())
-  slug            String   @unique
-  country         String
-  latitude        Float
-  longitude       Float
-  translations    Json
-  popularityScore Float    @default(0)
-  createdAt       DateTime @default(now())
+  id           String   @id @default(uuid())
+  slug         String   @unique
+  country      String
+  latitude     Float
+  longitude    Float
+  translations Json
+  popularityScore Float @default(0)
+  createdAt    DateTime @default(now())
 
   features         DestinationFeature[]
   interactions     Interaction[]
