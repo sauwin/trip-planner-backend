@@ -36,7 +36,7 @@ app.use('/api/trips', tripsRouter);
 app.use('/api/admin', adminRouter);
 app.use('/api/reviews', reviewsRouter);
 
-app.get('/api/health', (req, res) => {
+app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok' });
 });
 

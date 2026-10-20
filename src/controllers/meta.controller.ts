@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import { getFeatureCategoriesWithFeatures } from '../services/meta.service';
 import { handleServiceError } from '../lib/serviceErrors';
 
-export async function listFeatureCategories(req: Request, res: Response) {
+export async function listFeatureCategories(_req: Request, res: Response) {
   try {
     const categories = await getFeatureCategoriesWithFeatures();
     res.json(categories);

@@ -27,8 +27,6 @@ export const createDestinationSchema = z.object({
   features: destinationFeaturesSchema,
 });
 
-export const updateDestinationSchema = createDestinationSchema;
-
 export const deleteDestinationSchema = z.object({
   id: z.string().uuid('id must be a valid UUID'),
 });

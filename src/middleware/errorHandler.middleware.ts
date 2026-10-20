@@ -4,7 +4,7 @@ export function notFoundHandler(req: Request, res: Response) {
   res.status(404).json({ error: `Route ${req.method} ${req.path} not found` });
 }
 
-export function errorHandler(err: unknown, req: Request, res: Response, next: NextFunction) {
+export function errorHandler(err: unknown, _req: Request, res: Response, next: NextFunction) {
   console.error('Unhandled error:', err);
 
   if (res.headersSent) {
