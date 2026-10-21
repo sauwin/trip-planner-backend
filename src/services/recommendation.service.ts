@@ -47,11 +47,6 @@ export async function getRecommendationsForUser(
 
   const activeCategoryKeys = new Set<string>(recommendationCategoryKeys);
   const activePreferences = savedPreferences.filter(({ category }) => activeCategoryKeys.has(category.key));
-  const answeredActiveCategories = new Set(activePreferences.map(({ category }) => category.key));
-  if (activePreferences.length > 0 && answeredActiveCategories.size !== recommendationCategoryKeys.length) {
-    throw new Error('NO_PREFERENCES');
-  }
-
   const preferences = activePreferences.length > 0 ? activePreferences : savedPreferences;
   const preferencesByCategory = new Map<string, typeof savedPreferences>();
   for (const preference of preferences) {
