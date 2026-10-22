@@ -3,6 +3,7 @@ import { Response } from 'express';
 interface KnownError {
   status: number;
   message: string;
+  code?: string;
 }
 
 export function getErrorMessage(error: unknown) {
@@ -27,7 +28,10 @@ export function handleServiceError(
   const known = (messageKey && knownErrors[messageKey]) || (codeKey && knownErrors[codeKey]);
 
   if (known) {
-    res.status(known.status).json({ error: known.message });
+    res.status(known.status).json({
+      error: known.message,
+      ...(known.code ? { code: known.code } : {}),
+    });
     return;
   }
 

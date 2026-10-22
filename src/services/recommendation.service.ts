@@ -24,6 +24,7 @@ interface DestinationScore {
     features: DestinationFeatureView[];
   };
   score: number;
+  matchedFeatures: string[];
 }
 
 export interface PaginatedRecommendations {
@@ -82,15 +83,26 @@ export async function getRecommendationsForUser(
   const results = filteredDestinations.map((destination) => {
     let score = 0;
     let maxScore = 0;
+    const matchedFeatures: string[] = [];
+    const destinationFeatureById = new Map(
+      destination.features.map((feature) => [feature.featureId, feature]),
+    );
 
     for (const categoryPreferences of preferencesByCategory.values()) {
       const categoryWeight = Math.max(0, categoryPreferences[0].category.defaultWeight);
       maxScore += categoryWeight;
       const bestMatchWeight = categoryPreferences.reduce((bestWeight, preference) => {
-        const match = destination.features.find((feature) => feature.featureId === preference.featureId);
+        const match = destinationFeatureById.get(preference.featureId);
         return Math.max(bestWeight, Math.max(0, Math.min(1, match?.weight ?? 0)));
       }, 0);
       score += categoryWeight * bestMatchWeight;
+
+      if (bestMatchWeight > 0) {
+        for (const preference of categoryPreferences) {
+          const match = destinationFeatureById.get(preference.featureId);
+          if (match && match.weight > 0) matchedFeatures.push(preference.feature.key);
+        }
+      }
     }
 
     const normalizedScore = maxScore > 0 ? Math.max(0, Math.min(100, Math.round((score / maxScore) * 100))) : 0;
@@ -109,6 +121,7 @@ export async function getRecommendationsForUser(
         features: featureViews,
       },
       score: normalizedScore,
+      matchedFeatures,
     };
   });
 

@@ -24,7 +24,7 @@ async function updateDestinationPopularity(transaction: Prisma.TransactionClient
 }
 
 export async function findDestinationReviews(destinationId: string, userId: string, offset: number, limit: number) {
-  const [items, ownReview, summary] = await Promise.all([
+  const [items, ownReview, summary, ratingGroups] = await Promise.all([
     prisma.destinationReview.findMany({
       where: { destinationId },
       include: reviewInclude,
@@ -41,13 +41,38 @@ export async function findDestinationReviews(destinationId: string, userId: stri
       _avg: { rating: true },
       _count: { _all: true },
     }),
+    prisma.destinationReview.groupBy({
+      by: ['rating'],
+      where: { destinationId },
+      _count: { _all: true },
+    }),
   ]);
+
+  const ratingDistribution = {
+    1: 0,
+    2: 0,
+    3: 0,
+    4: 0,
+    5: 0,
+  };
+  for (const group of ratingGroups) {
+    switch (group.rating) {
+      case 1:
+      case 2:
+      case 3:
+      case 4:
+      case 5:
+        ratingDistribution[group.rating] = group._count._all;
+        break;
+    }
+  }
 
   return {
     items,
     ownReview,
     averageRating: summary._avg.rating,
     total: summary._count._all,
+    ratingDistribution,
   };
 }
 

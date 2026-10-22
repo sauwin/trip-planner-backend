@@ -11,7 +11,11 @@ export async function getRecommendations(req: AuthenticatedRequest, res: Respons
     res.json(recommendations);
   } catch (error: unknown) {
     handleServiceError(error, res, 'Failed to compute recommendations', {
-      NO_PREFERENCES: { status: 400, message: 'Complete the preferences quiz first' },
+      NO_PREFERENCES: {
+        status: 400,
+        message: 'Complete the preferences quiz first',
+        code: 'NO_PREFERENCES',
+      },
     });
   }
 }

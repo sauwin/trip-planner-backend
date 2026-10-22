@@ -11,18 +11,12 @@ export async function savePreferences(req: AuthenticatedRequest, res: Response) 
     }
 
     const { preferences } = req.body;
-    if (!Array.isArray(preferences) || preferences.length === 0) {
-      res.status(400).json({ error: 'preferences must be a non-empty array' });
-      return;
-    }
-
     const saved = await saveUserPreferences(req.userId, preferences);
     res.json(saved);
   } catch (error) {
     handleServiceError(error, res, 'Failed to save preferences', {
       USER_NOT_FOUND: { status: 401, message: 'User no longer exists. Please log in again.' },
       INVALID_PREFERENCES: { status: 400, message: 'Each selected feature must belong to its category' },
-      INCOMPLETE_PREFERENCES: { status: 400, message: 'INCOMPLETE_PREFERENCES' },
     });
   }
 }
