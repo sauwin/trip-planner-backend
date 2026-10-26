@@ -15,6 +15,7 @@ import interactionsRouter from './routes/interactions.routes';
 import tripsRouter from './routes/trips.routes';
 import adminRouter from './routes/admin.routes';
 import reviewsRouter from './routes/reviews.routes';
+import contactRouter from './routes/contact.routes';
 import { bootstrapSuperAdmin } from './services/auth.service';
 
 const app = express();
@@ -35,6 +36,7 @@ app.use('/api/interactions', interactionsRouter);
 app.use('/api/trips', tripsRouter);
 app.use('/api/admin', adminRouter);
 app.use('/api/reviews', reviewsRouter);
+app.use('/api/contact', contactRouter);
 
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok' });

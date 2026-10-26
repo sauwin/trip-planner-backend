@@ -22,3 +22,37 @@ export async function sendPasswordResetEmail(to: string, resetLink: string, expi
     `,
   });
 }
+
+function escapeHtml(value: string) {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+export async function sendContactEmail(input: { name: string; email: string; subject: string; message: string }) {
+  const to = process.env.CONTACT_EMAIL || process.env.SMTP_USER;
+  if (!to) {
+    throw new Error('CONTACT_EMAIL or SMTP_USER must be set');
+  }
+
+  const name = escapeHtml(input.name);
+  const email = escapeHtml(input.email);
+  const message = escapeHtml(input.message).replace(/\n/g, '<br>');
+  const subject = input.subject.replace(/[\r\n]+/g, ' ');
+
+  await transporter.sendMail({
+    from: process.env.SMTP_FROM || '"TripPlanner" <no-reply@tripplanner.local>',
+    to,
+    replyTo: `"${input.name.replace(/["\r\n]/g, '')}" <${input.email}>`,
+    subject: `[TripPlanner contact] ${subject}`,
+    html: `
+      <p><strong>From:</strong> ${name} (<a href="mailto:${email}">${email}</a>)</p>
+      <p><strong>Subject:</strong> ${escapeHtml(subject)}</p>
+      <hr>
+      <p>${message}</p>
+    `,
+  });
+}

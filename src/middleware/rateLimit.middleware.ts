@@ -40,3 +40,11 @@ export const passwordResetAttemptRateLimit = rateLimit({
   legacyHeaders: false,
   message: { error: 'Too many password reset attempts, please try again later' },
 });
+
+export const contactRateLimit = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many messages, please try again later' },
+});
