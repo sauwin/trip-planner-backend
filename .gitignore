@@ -35,4 +35,11 @@ Thumbs.db
 uploads/
 tmp/
 
+# Generated files
 src/generated/
+
+# Vitest
+__screenshots__/
+coverage
+playwright-report
+test-results
