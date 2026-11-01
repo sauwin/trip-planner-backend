@@ -28,3 +28,10 @@ export async function findRecommendationDestinations() {
     },
   });
 }
+
+export async function findInteractionsForUser(userId: string) {
+  return prisma.interaction.findMany({
+    where: { userId },
+    select: { destinationId: true, type: true, value: true },
+  });
+}

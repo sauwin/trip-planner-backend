@@ -9,6 +9,11 @@ import {
   type RecommendationFeatureKey,
 } from '../src/data/recommendationCatalog';
 
+/** Váha hlavnej charakteristiky destinácie v kategórii (plná zhoda). */
+const PRIMARY_FEATURE_WEIGHT = 1;
+/** Váha vedľajšej charakteristiky destinácie (čiastočná zhoda). */
+const SECONDARY_FEATURE_WEIGHT = 0.5;
+
 async function main() {
   const featureIdByKey = new Map<RecommendationFeatureKey, string>();
   const categoryByFeature = new Map<RecommendationFeatureKey, string>();
@@ -394,7 +399,7 @@ async function main() {
         throw new Error(`Invalid category assignment for "${featureKey}" at destination: ${data.slug}`);
       }
       featuresByCategory.add(categoryKey);
-      return { featureId, weight: 0.8 };
+      return { featureId, weight: PRIMARY_FEATURE_WEIGHT };
     });
 
     if (featuresByCategory.size !== recommendationCategoryKeys.length) {
@@ -408,7 +413,7 @@ async function main() {
         throw new Error(`Unknown secondary feature "${featureKey}" for destination: ${data.slug}`);
       }
       if (!linksByFeatureId.has(featureId)) {
-        linksByFeatureId.set(featureId, { featureId, weight: 0.55 });
+        linksByFeatureId.set(featureId, { featureId, weight: SECONDARY_FEATURE_WEIGHT });
       }
     }
 

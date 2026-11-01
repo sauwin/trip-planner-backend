@@ -26,6 +26,7 @@ beforeEach(() => {
         { categoryId: budget.id, featureId: 'f1', category: budget, feature: { id: 'f1', key: 'budget-value' } },
     ]);
     m(repo.findRecommendationDestinations).mockResolvedValue([destination('rome', 1), destination('oslo', 0.5)]);
+    m(repo.findInteractionsForUser).mockResolvedValue([]);
 });
 
 describe('GET /api/recommendations', () => {
@@ -51,6 +52,19 @@ describe('GET /api/recommendations', () => {
         ['rome', 100],
         ['oslo', 50],
         ]);
+    });
+
+    it('200 s behaviorálnou zložkou: obľúbená destinácia zmení skóre a odpoveď obsahuje behaviorWeight', async () => {
+        m(repo.findInteractionsForUser).mockResolvedValue([{ destinationId: 'oslo', type: 'LIKE', value: null }]);
+        const res = await request(app).get('/api/recommendations').set(bearer());
+
+        expect(res.status).toBe(200);
+        expect(res.body.behaviorWeight).toBe(0.1);
+        expect(res.body.items.map((i: { destination: { slug: string }; score: number }) => [i.destination.slug, i.score])).toEqual([
+        ['rome', 100],
+        ['oslo', 55],
+        ]);
+        expect(res.body.items[1]).toMatchObject({ preferenceScore: 50, behaviorScore: 100 });
     });
 
     it('rešpektuje query parametre limit a offset', async () => {
