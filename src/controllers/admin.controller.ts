@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { AuthenticatedRequest } from '../middleware/auth.middleware';
-import { changeManagedUserRole, searchManagedUsers } from '../services/admin.service';
+import { changeManagedUserRole, getAdminAuditHistory, searchManagedUsers } from '../services/admin.service';
 import { handleServiceError } from '../lib/serviceErrors';
 
 export async function listManagedUsers(req: Request, res: Response) {
@@ -10,6 +10,19 @@ export async function listManagedUsers(req: Request, res: Response) {
     res.json({ items: users });
   } catch (error) {
     handleServiceError(error, res, 'Failed to search users');
+  }
+}
+
+export async function listAdminAuditHistory(req: Request, res: Response) {
+  try {
+    const { cursor } = (req as Request & { validatedQuery: { cursor?: string } }).validatedQuery;
+    const items = await getAdminAuditHistory(cursor);
+    res.json({
+      items,
+      nextCursor: items.length === 100 ? items[items.length - 1].id : null,
+    });
+  } catch (error) {
+    handleServiceError(error, res, 'Failed to fetch admin audit history');
   }
 }
 

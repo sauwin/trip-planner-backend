@@ -235,7 +235,7 @@ describe('DELETE /api/reviews/:reviewId/admin (moderácia)', () => {
         const res = await request(app).delete(`/api/reviews/${REVIEW_ID}/admin`).set(bearer(USER_ID, 'ADMIN'));
 
         expect(res.status).toBe(204);
-        expect(repo.deleteDestinationReview).toHaveBeenCalledWith(REVIEW_ID, undefined);
+        expect(repo.deleteDestinationReview).toHaveBeenCalledWith(REVIEW_ID, undefined, USER_ID);
     });
 
     it('404, ak recenzia neexistuje', async () => {

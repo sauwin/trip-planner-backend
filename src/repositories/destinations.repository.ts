@@ -1,6 +1,7 @@
 import { prisma } from '../lib/prisma';
 import { Prisma } from '../generated/prisma/client';
 import { recommendationFeatureKeys } from '../data/recommendationCatalog';
+import { createAdminAuditLog, getDestinationAuditLabel } from './admin-audit.repository';
 
 export const DESTINATION_FEATURES_INCLUDE = {
   features: { include: { feature: { include: { category: true } } } },
@@ -158,7 +159,7 @@ async function assertKnownFeatures(
   }
 }
 
-export async function createDestination({ features, ...data }: CreateDestinationData) {
+export async function createDestination(actorId: string, { features, ...data }: CreateDestinationData) {
   return prisma.$transaction(async (transaction) => {
     await assertKnownFeatures(transaction, features);
     const destination = await transaction.destination.create({ data });
@@ -167,14 +168,22 @@ export async function createDestination({ features, ...data }: CreateDestination
         data: features.map((feature) => ({ ...feature, destinationId: destination.id })),
       });
     }
-    return transaction.destination.findUniqueOrThrow({
+    const created = await transaction.destination.findUniqueOrThrow({
       where: { id: destination.id },
       include: DESTINATION_FEATURES_INCLUDE,
     });
+    await createAdminAuditLog(
+      transaction,
+      actorId,
+      'DESTINATION_CREATED',
+      created.id,
+      getDestinationAuditLabel(created.slug, created.translations),
+    );
+    return created;
   });
 }
 
-export async function updateDestination(id: string, { features, ...data }: CreateDestinationData) {
+export async function updateDestination(actorId: string, id: string, { features, ...data }: CreateDestinationData) {
   return prisma.$transaction(async (transaction) => {
     await assertKnownFeatures(transaction, features);
     await transaction.destination.update({ where: { id }, data });
@@ -184,15 +193,36 @@ export async function updateDestination(id: string, { features, ...data }: Creat
         data: features.map((feature) => ({ ...feature, destinationId: id })),
       });
     }
-    return transaction.destination.findUniqueOrThrow({
+    const updated = await transaction.destination.findUniqueOrThrow({
       where: { id },
       include: DESTINATION_FEATURES_INCLUDE,
     });
+    await createAdminAuditLog(
+      transaction,
+      actorId,
+      'DESTINATION_UPDATED',
+      updated.id,
+      getDestinationAuditLabel(updated.slug, updated.translations),
+    );
+    return updated;
   });
 }
 
-export async function deleteDestination(id: string) {
-  return prisma.destination.delete({ where: { id } });
+export async function deleteDestination(actorId: string, id: string) {
+  return prisma.$transaction(async (transaction) => {
+    const destination = await transaction.destination.findUniqueOrThrow({
+      where: { id },
+      select: { id: true, slug: true, translations: true },
+    });
+    await transaction.destination.delete({ where: { id } });
+    await createAdminAuditLog(
+      transaction,
+      actorId,
+      'DESTINATION_DELETED',
+      destination.id,
+      getDestinationAuditLabel(destination.slug, destination.translations),
+    );
+  });
 }
 
 export async function findSavedDestinations(userId: string) {

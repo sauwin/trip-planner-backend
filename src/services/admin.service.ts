@@ -1,7 +1,12 @@
 import { findManagedUsers, findManagedUser, updateManagedUserRole, countSuperAdmins } from '../repositories/admin.repository';
+import { listAdminAuditLogs } from '../repositories/admin-audit.repository';
 
 export async function searchManagedUsers(query?: string) {
   return findManagedUsers(query);
+}
+
+export async function getAdminAuditHistory(cursor?: string) {
+  return listAdminAuditLogs(cursor);
 }
 
 export async function changeManagedUserRole(actorId: string, id: string, role: 'USER' | 'ADMIN') {
@@ -19,5 +24,5 @@ export async function changeManagedUserRole(actorId: string, id: string, role: '
   }
 
   if (target.role === role) return target;
-  return updateManagedUserRole(id, role);
+  return updateManagedUserRole(actorId, id, role);
 }

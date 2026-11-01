@@ -1,6 +1,7 @@
 import { Prisma } from '../generated/prisma/client';
 import { prisma } from '../lib/prisma';
 import type { UserRole } from '../middleware/auth.middleware';
+import { createAdminAuditLog } from './admin-audit.repository';
 
 export async function findManagedUsers(query?: string) {
   const where: Prisma.UserWhereInput = query
@@ -20,11 +21,38 @@ export async function findManagedUsers(query?: string) {
   });
 }
 
-export async function updateManagedUserRole(id: string, role: Extract<UserRole, 'USER' | 'ADMIN'>) {
-  return prisma.user.update({
-    where: { id },
-    data: { role, sessionVersion: { increment: 1 } },
-    select: { id: true, email: true, name: true, role: true },
+export async function updateManagedUserRole(actorId: string, id: string, role: Extract<UserRole, 'USER' | 'ADMIN'>) {
+  return prisma.$transaction(async (transaction) => {
+    const currentUser = await transaction.user.findUniqueOrThrow({
+      where: { id },
+      select: { id: true, email: true, name: true, role: true },
+    });
+    if (currentUser.role === 'SUPER_ADMIN') throw new Error('SUPER_ADMIN_MANAGEMENT_DISABLED');
+    if (currentUser.role === role) return currentUser;
+
+    const changed = await transaction.user.updateMany({
+      where: { id, role: currentUser.role },
+      data: { role, sessionVersion: { increment: 1 } },
+    });
+    if (!changed.count) {
+      return transaction.user.findUniqueOrThrow({
+        where: { id },
+        select: { id: true, email: true, name: true, role: true },
+      });
+    }
+
+    const user = await transaction.user.findUniqueOrThrow({
+      where: { id },
+      select: { id: true, email: true, name: true, role: true },
+    });
+    await createAdminAuditLog(
+      transaction,
+      actorId,
+      role === 'ADMIN' ? 'ADMIN_ADDED' : 'ADMIN_REMOVED',
+      user.id,
+      user.name || user.email,
+    );
+    return user;
   });
 }
 

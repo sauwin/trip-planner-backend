@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { listManagedUsers, updateManagedUser } from '../controllers/admin.controller';
+import { listAdminAuditHistory, listManagedUsers, updateManagedUser } from '../controllers/admin.controller';
 import { requireAuth, requireRole } from '../middleware/auth.middleware';
 import { validateBody, validateParams, validateQuery } from '../middleware/validate';
 import { z } from 'zod';
@@ -14,8 +14,12 @@ const updateRoleSchema = z.object({
 const userIdSchema = z.object({
   id: z.string().uuid('id must be a valid UUID'),
 });
+const auditQuerySchema = z.object({
+  cursor: z.string().uuid().optional(),
+});
 
 router.use(requireAuth, requireRole('SUPER_ADMIN'));
+router.get('/audit-log', validateQuery(auditQuerySchema), listAdminAuditHistory);
 router.get('/users', validateQuery(searchUsersSchema), listManagedUsers);
 router.patch('/users/:id/role', validateParams(userIdSchema), validateBody(updateRoleSchema), updateManagedUser);
 

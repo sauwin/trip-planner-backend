@@ -3,10 +3,12 @@ import request from 'supertest';
 
 vi.mock('../../src/repositories/auth.repository');
 vi.mock('../../src/repositories/admin.repository');
+vi.mock('../../src/repositories/admin-audit.repository');
 
 import app from '../../src/app';
 import * as auth from '../../src/repositories/auth.repository';
 import * as admin from '../../src/repositories/admin.repository';
+import * as audit from '../../src/repositories/admin-audit.repository';
 import { bearer, USER_ID, OTHER_USER_ID } from '../helpers';
 
 const m = <T extends (...a: never[]) => unknown>(fn: T) => fn as unknown as ReturnType<typeof vi.fn>;
@@ -15,6 +17,7 @@ describe('administrácia používateľov (/api/admin)', () => {
     beforeEach(() => {
         m(auth.findUserSession).mockResolvedValue({ role: 'SUPER_ADMIN', sessionVersion: 0 });
         m(admin.findManagedUsers).mockResolvedValue([{ id: 'u9', email: 'a@b.sk', name: 'A', role: 'ADMIN' }]);
+        m(audit.listAdminAuditLogs).mockResolvedValue([{ id: 'event-1', action: 'ADMIN_ADDED' }]);
     });
 
     it('401 bez tokenu', async () => {
@@ -44,6 +47,37 @@ describe('administrácia používateľov (/api/admin)', () => {
         const res = await request(app).get('/api/admin/users').set(bearer(USER_ID, 'SUPER_ADMIN'));
         expect(res.status).toBe(200);
         expect(res.body.items).toHaveLength(1);
+    });
+
+    it('SUPER_ADMIN môže zobraziť históriu akcií', async () => {
+        const res = await request(app).get('/api/admin/audit-log').set(bearer(USER_ID, 'SUPER_ADMIN'));
+        expect(res.status).toBe(200);
+        expect(res.body.items).toHaveLength(1);
+        expect(res.body.nextCursor).toBeNull();
+    });
+
+    it('vráti kurzor na ďalšiu stránku pri 100 záznamoch', async () => {
+        const items = Array.from({ length: 100 }, (_, index) => ({ id: `event-${index}` }));
+        m(audit.listAdminAuditLogs).mockResolvedValue(items);
+        const res = await request(app).get('/api/admin/audit-log').set(bearer(USER_ID, 'SUPER_ADMIN'));
+        expect(res.body.nextCursor).toBe('event-99');
+    });
+
+    it('odošle platný kurzor do úložiska histórie', async () => {
+        await request(app).get(`/api/admin/audit-log?cursor=${OTHER_USER_ID}`).set(bearer(USER_ID, 'SUPER_ADMIN'));
+        expect(audit.listAdminAuditLogs).toHaveBeenCalledWith(OTHER_USER_ID);
+    });
+
+    it('odmietne neplatný kurzor histórie', async () => {
+        const res = await request(app).get('/api/admin/audit-log?cursor=bad').set(bearer(USER_ID, 'SUPER_ADMIN'));
+        expect(res.status).toBe(400);
+        expect(audit.listAdminAuditLogs).not.toHaveBeenCalled();
+    });
+
+    it('bežný admin nemôže zobraziť históriu akcií', async () => {
+        m(auth.findUserSession).mockResolvedValue({ role: 'ADMIN', sessionVersion: 0 });
+        const res = await request(app).get('/api/admin/audit-log').set(bearer(USER_ID, 'ADMIN'));
+        expect(res.status).toBe(403);
     });
 
     it('400 pre príliš krátky vyhľadávací reťazec', async () => {

@@ -33,6 +33,17 @@ Start the API with `npm run dev`. By default, it listens on port `3000`.
 Configure SMTP settings if you want password-reset and contact emails to be
 delivered.
 
+## Super-admin audit history
+
+The super-admin page includes an audit history of destination creation,
+updates and deletion; review moderation; and admin-role additions and removals.
+Entries are written in the same database transaction as each action and remain
+available if the related user or destination is later deleted. The page loads
+the history newest-first in pages of 100.
+
+Apply the `add_admin_audit_log` migration with `npx prisma migrate deploy` when
+deploying this version.
+
 ## Validate
 
 ```powershell

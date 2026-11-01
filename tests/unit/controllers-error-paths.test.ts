@@ -18,7 +18,7 @@ import * as preferencesService from '../../src/services/preferences.service';
 import * as reviewsService from '../../src/services/reviews.service';
 import * as tripsService from '../../src/services/trips.service';
 
-import { listManagedUsers, updateManagedUser } from '../../src/controllers/admin.controller';
+import { listAdminAuditHistory, listManagedUsers, updateManagedUser } from '../../src/controllers/admin.controller';
 import { register, currentUser, login, refresh, forgotPassword, resetPasswordHandler, logout } from '../../src/controllers/auth.controller';
 import {
     listDestinations, searchDestinations, getDestination, createDestinationHandler,
@@ -69,6 +69,15 @@ describe('admin.controller – chybové vetvy', () => {
         const res = response();
         await listManagedUsers(request(), res);
         expect(res.status).toHaveBeenCalledWith(500);
+    });
+
+    it('spracuje chybu pri načítaní histórie akcií', async () => {
+        m(adminService.getAdminAuditHistory).mockRejectedValue(new Error('db error'));
+        const res = response();
+        await listAdminAuditHistory(request({ validatedQuery: { cursor: 'cursor-id' } }), res);
+        expect(adminService.getAdminAuditHistory).toHaveBeenCalledWith('cursor-id');
+        expect(res.status).toHaveBeenCalledWith(500);
+        expect(res.json).toHaveBeenCalledWith({ error: 'Failed to fetch admin audit history' });
     });
 
     it('odmietne neplatné id používateľa', async () => {

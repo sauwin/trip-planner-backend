@@ -1,6 +1,7 @@
 import { prisma } from '../lib/prisma';
 import { Prisma } from '../generated/prisma/client';
 import { ReviewInput } from '../schemas/reviews.schema';
+import { createAdminAuditLog, getDestinationAuditLabel } from './admin-audit.repository';
 
 const reviewInclude = {
   user: { select: { id: true, name: true } },
@@ -115,11 +116,15 @@ export async function updateDestinationReview(userId: string, reviewId: string, 
   });
 }
 
-export async function deleteDestinationReview(reviewId: string, userId?: string) {
+export async function deleteDestinationReview(reviewId: string, userId?: string, actorId?: string) {
   return prisma.$transaction(async (transaction) => {
     const existingReview = await transaction.destinationReview.findFirst({
       where: { id: reviewId, ...(userId ? { userId } : {}) },
-      select: { destinationId: true },
+      select: {
+        destinationId: true,
+        user: { select: { name: true, email: true } },
+        destination: { select: { slug: true, translations: true } },
+      },
     });
     if (!existingReview) return 0;
 
@@ -129,6 +134,16 @@ export async function deleteDestinationReview(reviewId: string, userId?: string)
     });
     if (result.count) {
       await updateDestinationPopularity(transaction, existingReview.destinationId);
+      if (actorId) {
+        await createAdminAuditLog(
+          transaction,
+          actorId,
+          'REVIEW_DELETED',
+          reviewId,
+          getDestinationAuditLabel(existingReview.destination.slug, existingReview.destination.translations),
+          existingReview.user.name || existingReview.user.email,
+        );
+      }
     }
     return result.count;
   });

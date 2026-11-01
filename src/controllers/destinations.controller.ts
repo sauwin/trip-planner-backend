@@ -44,7 +44,7 @@ export async function getDestination(req: Request, res: Response) {
 
 export async function createDestinationHandler(req: AuthenticatedRequest, res: Response) {
   try {
-    const destination = await createDestination(req.body);
+    const destination = await createDestination(req.userId!, req.body);
     res.status(201).json(destination);
   } catch (error: unknown) {
     handleServiceError(error, res, 'Failed to create destination', {
@@ -62,7 +62,7 @@ export async function updateDestinationHandler(req: AuthenticatedRequest, res: R
       return;
     }
 
-    const destination = await updateDestination(id, req.body);
+    const destination = await updateDestination(req.userId!, id, req.body);
     res.json(destination);
   } catch (error: unknown) {
     handleServiceError(error, res, 'Failed to update destination', {
@@ -81,7 +81,7 @@ export async function deleteDestinationHandler(req: AuthenticatedRequest, res: R
       return;
     }
 
-    await deleteDestination(id);
+    await deleteDestination(req.userId!, id);
     res.status(204).send();
   } catch (error: unknown) {
     handleServiceError(error, res, 'Failed to delete destination', {

@@ -1,11 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 vi.mock('../../src/repositories/admin.repository');
+vi.mock('../../src/repositories/admin-audit.repository');
 vi.mock('../../src/repositories/preferences.repository');
 
 import * as adminRepo from '../../src/repositories/admin.repository';
+import * as auditRepo from '../../src/repositories/admin-audit.repository';
 import * as preferencesRepo from '../../src/repositories/preferences.repository';
-import { changeManagedUserRole, searchManagedUsers } from '../../src/services/admin.service';
+import { changeManagedUserRole, getAdminAuditHistory, searchManagedUsers } from '../../src/services/admin.service';
 import { getUserPreferences, saveUserPreferences } from '../../src/services/preferences.service';
 
 const m = <T extends (...a: never[]) => unknown>(fn: T) => fn as unknown as ReturnType<typeof vi.fn>;
@@ -48,6 +50,19 @@ describe('admin.service', () => {
         m(adminRepo.findManagedUser).mockResolvedValue(user);
         await expect(changeManagedUserRole('root', 'u2', 'ADMIN')).resolves.toBe(user);
         expect(adminRepo.updateManagedUserRole).not.toHaveBeenCalled();
+    });
+
+    it('zaznamenáva volajúceho pri zmene roly používateľa', async () => {
+        m(adminRepo.findManagedUser).mockResolvedValue({ id: 'u2', role: 'USER' });
+        m(adminRepo.updateManagedUserRole).mockResolvedValue({ id: 'u2', role: 'ADMIN' });
+        await changeManagedUserRole('root', 'u2', 'ADMIN');
+        expect(adminRepo.updateManagedUserRole).toHaveBeenCalledWith('root', 'u2', 'ADMIN');
+    });
+
+    it('načíta históriu so zadaným kurzorom', async () => {
+        m(auditRepo.listAdminAuditLogs).mockResolvedValue([]);
+        await expect(getAdminAuditHistory('cursor')).resolves.toEqual([]);
+        expect(auditRepo.listAdminAuditLogs).toHaveBeenCalledWith('cursor');
     });
 });
 

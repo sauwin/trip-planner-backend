@@ -52,16 +52,16 @@ export async function getDestinationById(id: string) {
   return destination ? withLeanFeatures(destination) : null;
 }
 
-export async function createDestination(data: CreateDestinationData) {
-  return insertDestination(data);
+export async function createDestination(actorId: string, data: CreateDestinationData) {
+  return insertDestination(actorId, data);
 }
 
-export async function updateDestination(id: string, data: CreateDestinationData) {
-  return updateDestinationRecord(id, data);
+export async function updateDestination(actorId: string, id: string, data: CreateDestinationData) {
+  return updateDestinationRecord(actorId, id, data);
 }
 
-export async function deleteDestination(id: string) {
-  return removeDestination(id);
+export async function deleteDestination(actorId: string, id: string) {
+  return removeDestination(actorId, id);
 }
 
 export async function getSavedDestinations(userId: string) {

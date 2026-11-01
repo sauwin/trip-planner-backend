@@ -17,6 +17,15 @@ enum UserRole {
   SUPER_ADMIN
 }
 
+enum AdminAuditAction {
+  DESTINATION_CREATED
+  DESTINATION_UPDATED
+  DESTINATION_DELETED
+  REVIEW_DELETED
+  ADMIN_ADDED
+  ADMIN_REMOVED
+}
+
 model User {
   id             String   @id @default(uuid())
   email          String   @unique
@@ -32,6 +41,20 @@ model User {
   passwordResetTokens PasswordResetToken[]
 
   preferences UserPreference[]
+}
+
+model AdminAuditLog {
+  id          String           @id @default(uuid())
+  actorId     String
+  actorName   String
+  actorEmail  String
+  action      AdminAuditAction
+  entityId    String
+  entityLabel String
+  targetLabel String?
+  createdAt   DateTime         @default(now())
+
+  @@index([createdAt])
 }
 
 model Destination {

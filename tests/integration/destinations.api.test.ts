@@ -42,8 +42,8 @@ beforeEach(() => {
     m(repo.searchDestinations).mockResolvedValue([]);
     m(repo.findSavedDestinations).mockResolvedValue([]);
     m(repo.findDestinationById).mockResolvedValue(null);
-    m(repo.createDestination).mockImplementation(async (d: Record<string, unknown>) => ({ id: DEST_ID, ...d }));
-    m(repo.updateDestination).mockImplementation(async (id: string, d: Record<string, unknown>) => ({ id, ...d }));
+    m(repo.createDestination).mockImplementation(async (_actorId: string, d: Record<string, unknown>) => ({ id: DEST_ID, ...d }));
+    m(repo.updateDestination).mockImplementation(async (_actorId: string, id: string, d: Record<string, unknown>) => ({ id, ...d }));
     m(repo.deleteDestination).mockResolvedValue({ id: DEST_ID });
 });
 
@@ -263,7 +263,7 @@ describe('správa destinácií (ADMIN / SUPER_ADMIN)', () => {
         const res = await request(app).put(`/api/destinations/${DEST_ID}`).set(bearer(USER_ID, 'ADMIN')).send(validDestination);
 
         expect(res.status).toBe(200);
-        expect(repo.updateDestination).toHaveBeenCalledWith(DEST_ID, validDestination);
+        expect(repo.updateDestination).toHaveBeenCalledWith(USER_ID, DEST_ID, validDestination);
     });
 
     it('PUT vráti 404 (P2025), 409 (P2002) a 400 (neznáme features)', async () => {
@@ -299,7 +299,7 @@ describe('správa destinácií (ADMIN / SUPER_ADMIN)', () => {
         const res = await request(app).delete(`/api/destinations/${DEST_ID}`).set(bearer(USER_ID, 'ADMIN'));
 
         expect(res.status).toBe(204);
-        expect(repo.deleteDestination).toHaveBeenCalledWith(DEST_ID);
+        expect(repo.deleteDestination).toHaveBeenCalledWith(USER_ID, DEST_ID);
     });
 
     it('DELETE vráti 404, ak destinácia neexistuje (P2025)', async () => {

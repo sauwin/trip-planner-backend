@@ -18,6 +18,7 @@ export async function editDestinationReview(userId: string, reviewId: string, in
   return updateDestinationReview(userId, reviewId, input);
 }
 
-export async function removeDestinationReview(reviewId: string, userId?: string) {
+export async function removeDestinationReview(reviewId: string, userId?: string, actorId?: string) {
+  if (actorId) return deleteDestinationReview(reviewId, userId, actorId);
   return deleteDestinationReview(reviewId, userId);
 }

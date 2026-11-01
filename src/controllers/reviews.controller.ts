@@ -85,7 +85,7 @@ export async function adminDeleteReview(req: AuthenticatedRequest, res: Response
       res.status(400).json({ error: 'Invalid review id' });
       return;
     }
-    const deleted = await removeDestinationReview(reviewId);
+    const deleted = await removeDestinationReview(reviewId, undefined, req.userId);
     if (!deleted) {
       res.status(404).json({ error: 'Review not found' });
       return;
