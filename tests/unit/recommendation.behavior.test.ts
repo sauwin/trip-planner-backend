@@ -150,7 +150,6 @@ describe('getRecommendationsForUser: behaviorálna zložka', () => {
         const result = await getRecommendationsForUser('u1');
         const order = result.items.map((i) => i.destination.slug);
 
-        // bez správania by pri rovnakom skóre rozhodlo abecedné poradie a 'a-different' by bola prvá
         expect(order.indexOf('b-similar')).toBeLessThan(order.indexOf('a-different'));
         expect(result.items.find((i) => i.destination.slug === 'b-similar')!.score).toBe(100);
         expect(result.items.find((i) => i.destination.slug === 'a-different')!.score).toBe(97);
