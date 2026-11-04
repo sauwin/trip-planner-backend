@@ -132,7 +132,7 @@ describe('Eval: Analýza citlivosti váh', () => {
 });
 
 describe('Eval: Overenie behaviorálneho posunu', () => {
-  it('interakcia typu LIKE на конкретну дестинацію піднімає схожі місця у виводі', async () => {
+  it('interakcia typu LIKE na konkrétnu destináciu zvýši skóre podobných miest vo výstupe', async () => {
     const catalog = buildCatalogDestinations();
     asMock(findRecommendationDestinations).mockResolvedValue(catalog);
 

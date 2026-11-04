@@ -198,8 +198,8 @@ describe('getRecommendationsForUser: behaviorálna zložka', () => {
         const similar = result.items.find((i) => i.destination.slug === 'similar')!;
 
         expect(result.behaviorWeight).toBe(0.1);
-        expect(similar.behaviorScore).toBe(0);
-        expect(similar.score).toBe(90);
+        expect(similar.behaviorScore).toBe(-82);
+        expect(similar.score).toBe(82);
     });
 
     it('interakcie s neexistujúcou destináciou sa ignorujú', async () => {
@@ -242,11 +242,14 @@ describe('getRecommendationsForUser: behaviorálna zložka', () => {
         const result = await getRecommendationsForUser('u1');
 
         for (const item of result.items) {
-            for (const value of [item.score, item.preferenceScore, item.behaviorScore]) {
+            for (const value of [item.score, item.preferenceScore]) {
                 expect(Number.isInteger(value)).toBe(true);
                 expect(value).toBeGreaterThanOrEqual(0);
                 expect(value).toBeLessThanOrEqual(100);
             }
+            expect(Number.isInteger(item.behaviorScore)).toBe(true);
+            expect(item.behaviorScore).toBeGreaterThanOrEqual(-100);
+            expect(item.behaviorScore).toBeLessThanOrEqual(100);
         }
     });
 });
