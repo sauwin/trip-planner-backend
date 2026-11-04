@@ -117,8 +117,8 @@ describe('buildBehaviorProfile a cosineSimilarity', () => {
         expect(cosineSimilarity(profile, [{ featureId: 'z', weight: 1 }])).toBe(0);
     });
 
-    it('záporná podobnosť sa oreže na 0 a prázdny profil dáva 0', () => {
-        expect(cosineSimilarity(new Map([['x', -1]]), [{ featureId: 'x', weight: 1 }])).toBe(0);
+    it('záporná podobnosť je -1 a prázdny profil dáva 0', () => {
+        expect(cosineSimilarity(new Map([['x', -1]]), [{ featureId: 'x', weight: 1 }])).toBe(-1);
         expect(cosineSimilarity(new Map(), [{ featureId: 'x', weight: 1 }])).toBe(0);
     });
 });

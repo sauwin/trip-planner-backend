@@ -93,7 +93,7 @@ export function cosineSimilarity(profile: Map<string, number>, features: Feature
   let profileNorm = 0;
   for (const value of profile.values()) profileNorm += value * value;
   if (profileNorm === 0 || featureNorm === 0) return 0;
-  return clamp(dot / (Math.sqrt(profileNorm) * Math.sqrt(featureNorm)), 0, 1);
+  return clamp(dot / (Math.sqrt(profileNorm) * Math.sqrt(featureNorm)), -1, 1);
 }
 
 interface DestinationFeatureView {
@@ -174,9 +174,15 @@ export async function getRecommendationsForUser(
   }
   const behaviorProfile = buildBehaviorProfile(interestByDestination, destinations);
   const hasBehaviorProfile = [...behaviorProfile.values()].some((value) => value !== 0);
+  const totalInterestStrength = [...interestByDestination.values()].reduce(
+    (sum, val) => sum + Math.abs(val),
+    0,
+  );
   const behaviorWeight = hasBehaviorProfile
-    ? Math.min(BEHAVIOR_CONFIG.maxWeight, interestByDestination.size * BEHAVIOR_CONFIG.weightPerDestination)
-    : 0;
+    ? Math.min(
+      BEHAVIOR_CONFIG.maxWeight,
+      totalInterestStrength * BEHAVIOR_CONFIG.weightPerDestination,
+    ) : 0;
 
   const filteredDestinations = featureFilterGroups.size
     ? destinations.filter((destination) =>
@@ -212,7 +218,9 @@ export async function getRecommendationsForUser(
     }
 
     const preferenceRatio = maxScore > 0 ? clamp(score / maxScore, 0, 1) : 0;
-    const behaviorRatio = behaviorWeight > 0 ? cosineSimilarity(behaviorProfile, destination.features) : 0;
+    const behaviorRatio = behaviorWeight > 0
+      ? Math.max(0, cosineSimilarity(behaviorProfile, destination.features))
+      : 0;
     const combinedRatio = (1 - behaviorWeight) * preferenceRatio + behaviorWeight * behaviorRatio;
     const normalizedScore = clamp(Math.round(combinedRatio * 100), 0, 100);
 
@@ -241,6 +249,12 @@ export async function getRecommendationsForUser(
     .sort((a, b) => {
       if (b.score !== a.score) {
         return b.score - a.score;
+      }
+      if (b.behaviorScore !== a.behaviorScore) {
+        return b.behaviorScore - a.behaviorScore;
+      }
+      if (b.destination.popularityScore !== a.destination.popularityScore) {
+        return b.destination.popularityScore - a.destination.popularityScore;
       }
       return a.destination.slug.localeCompare(b.destination.slug);
     });

@@ -30,8 +30,23 @@ export async function findRecommendationDestinations() {
 }
 
 export async function findInteractionsForUser(userId: string) {
-  return prisma.interaction.findMany({
-    where: { userId },
-    select: { destinationId: true, type: true, value: true },
-  });
+  const [interactions, reviews] = await Promise.all([
+    prisma.interaction.findMany({
+      where: { userId },
+      select: { destinationId: true, type: true, value: true },
+    }),
+    prisma.destinationReview.findMany({
+      where: { userId },
+      select: { destinationId: true, rating: true },
+    }),
+  ]);
+
+  return [
+    ...interactions,
+    ...reviews.map((r) => ({
+      destinationId: r.destinationId,
+      type: 'RATING',
+      value: r.rating,
+    })),
+  ];
 }

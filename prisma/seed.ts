@@ -9,9 +9,7 @@ import {
   type RecommendationFeatureKey,
 } from '../src/data/recommendationCatalog';
 
-/** Váha hlavnej charakteristiky destinácie v kategórii (plná zhoda). */
 const PRIMARY_FEATURE_WEIGHT = 1;
-/** Váha vedľajšej charakteristiky destinácie (čiastočná zhoda). */
 const SECONDARY_FEATURE_WEIGHT = 0.5;
 
 async function main() {
@@ -38,6 +36,7 @@ async function main() {
   const destinations = [
     {
       slug: 'zakopane',
+      popularityScore: 4.2,
       country: 'Poland',
       latitude: 49.2992,
       longitude: 19.9496,
@@ -48,6 +47,7 @@ async function main() {
     },
     {
       slug: 'barcelona',
+      popularityScore: 4.9,
       country: 'Spain',
       latitude: 41.3874,
       longitude: 2.1686,
@@ -58,6 +58,7 @@ async function main() {
     },
     {
       slug: 'prague',
+      popularityScore: 4.8,
       country: 'Czechia',
       latitude: 50.0755,
       longitude: 14.4378,
@@ -68,6 +69,7 @@ async function main() {
     },
     {
       slug: 'male',
+      popularityScore: 4.1,
       country: 'Maldives',
       latitude: 4.1755,
       longitude: 73.5093,
@@ -78,6 +80,7 @@ async function main() {
     },
     {
       slug: 'reykjavik',
+      popularityScore: 4.2,
       country: 'Iceland',
       latitude: 64.1466,
       longitude: -21.9426,
@@ -88,6 +91,7 @@ async function main() {
     },
     {
       slug: 'bangkok',
+      popularityScore: 4.9,
       country: 'Thailand',
       latitude: 13.7563,
       longitude: 100.5018,
@@ -98,6 +102,7 @@ async function main() {
     },
     {
       slug: 'vienna',
+      popularityScore: 4.8,
       country: 'Austria',
       latitude: 48.20849,
       longitude: 16.37208,
@@ -108,6 +113,7 @@ async function main() {
     },
     {
       slug: 'rome',
+      popularityScore: 4.9,
       country: 'Italy',
       latitude: 41.89193,
       longitude: 12.51133,
@@ -118,6 +124,7 @@ async function main() {
     },
     {
       slug: 'lisbon',
+      popularityScore: 4.8,
       country: 'Portugal',
       latitude: 38.72509,
       longitude: -9.1498,
@@ -128,6 +135,7 @@ async function main() {
     },
     {
       slug: 'amsterdam',
+      popularityScore: 4.9,
       country: 'The Netherlands',
       latitude: 52.37403,
       longitude: 4.88969,
@@ -138,6 +146,7 @@ async function main() {
     },
     {
       slug: 'berlin',
+      popularityScore: 4.8,
       country: 'Germany',
       latitude: 52.52437,
       longitude: 13.41053,
@@ -148,6 +157,7 @@ async function main() {
     },
     {
       slug: 'dubrovnik',
+      popularityScore: 4.7,
       country: 'Croatia',
       latitude: 42.64125,
       longitude: 18.10909,
@@ -158,6 +168,7 @@ async function main() {
     },
     {
       slug: 'marrakesh',
+      popularityScore: 4.2,
       country: 'Morocco',
       latitude: 31.63416,
       longitude: -7.99994,
@@ -168,6 +179,7 @@ async function main() {
     },
     {
       slug: 'cape-town',
+      popularityScore: 4.8,
       country: 'South Africa',
       latitude: -33.92584,
       longitude: 18.42322,
@@ -178,6 +190,7 @@ async function main() {
     },
     {
       slug: 'rio-de-janeiro',
+      popularityScore: 4.8,
       country: 'Brazil',
       latitude: -22.90642,
       longitude: -43.18223,
@@ -188,6 +201,7 @@ async function main() {
     },
     {
       slug: 'new-york',
+      popularityScore: 4.9,
       country: 'United States',
       latitude: 40.71427,
       longitude: -74.00597,
@@ -198,6 +212,7 @@ async function main() {
     },
     {
       slug: 'tokyo',
+      popularityScore: 4.9,
       country: 'Japan',
       latitude: 35.6895,
       longitude: 139.69171,
@@ -208,6 +223,7 @@ async function main() {
     },
     {
       slug: 'kyoto',
+      popularityScore: 4.8,
       country: 'Japan',
       latitude: 35.02107,
       longitude: 135.75385,
@@ -218,6 +234,7 @@ async function main() {
     },
     {
       slug: 'singapore',
+      popularityScore: 4.8,
       country: 'Singapore',
       latitude: 1.28967,
       longitude: 103.85007,
@@ -228,6 +245,7 @@ async function main() {
     },
     {
       slug: 'ubud',
+      popularityScore: 4.1,
       country: 'Indonesia',
       latitude: -8.5098,
       longitude: 115.2654,
@@ -238,6 +256,7 @@ async function main() {
     },
     {
       slug: 'queenstown',
+      popularityScore: 3.9,
       country: 'South Africa',
       latitude: -31.89756,
       longitude: 26.87533,
@@ -248,6 +267,7 @@ async function main() {
     },
     {
       slug: 'interlaken',
+      popularityScore: 4.2,
       country: 'Switzerland',
       latitude: 46.68387,
       longitude: 7.86638,
@@ -258,6 +278,7 @@ async function main() {
     },
     {
       slug: 'chamonix',
+      popularityScore: 4.1,
       country: 'France',
       latitude: 45.92375,
       longitude: 6.86933,
@@ -268,6 +289,7 @@ async function main() {
     },
     {
       slug: 'whistler',
+      popularityScore: 4.1,
       country: 'Canada',
       latitude: 50.11817,
       longitude: -122.95396,
@@ -278,6 +300,7 @@ async function main() {
     },
     {
       slug: 'cancun',
+      popularityScore: 4.7,
       country: 'Mexico',
       latitude: 21.17429,
       longitude: -86.84656,
@@ -288,6 +311,7 @@ async function main() {
     },
     {
       slug: 'phuket',
+      popularityScore: 4.8,
       country: 'Thailand',
       latitude: 7.89059,
       longitude: 98.3981,
@@ -298,6 +322,7 @@ async function main() {
     },
     {
       slug: 'dubai',
+      popularityScore: 4.8,
       country: 'United Arab Emirates',
       latitude: 25.07725,
       longitude: 55.30927,
@@ -308,6 +333,7 @@ async function main() {
     },
     {
       slug: 'cairo',
+      popularityScore: 4.7,
       country: 'Egypt',
       latitude: 30.06263,
       longitude: 31.24967,
@@ -318,6 +344,7 @@ async function main() {
     },
     {
       slug: 'cusco',
+      popularityScore: 4.2,
       country: 'Peru',
       latitude: -13.53188,
       longitude: -71.96701,
@@ -328,6 +355,7 @@ async function main() {
     },
     {
       slug: 'edinburgh',
+      popularityScore: 4.8,
       country: 'United Kingdom',
       latitude: 55.95206,
       longitude: -3.19648,
@@ -338,6 +366,7 @@ async function main() {
     },
     {
       slug: 'copenhagen',
+      popularityScore: 4.7,
       country: 'Denmark',
       latitude: 55.67594,
       longitude: 12.56553,
@@ -348,6 +377,7 @@ async function main() {
     },
     {
       slug: 'budapest',
+      popularityScore: 4.8,
       country: 'Hungary',
       latitude: 47.49835,
       longitude: 19.04045,
@@ -358,6 +388,7 @@ async function main() {
     },
     {
       slug: 'krakow',
+      popularityScore: 4.7,
       country: 'Poland',
       latitude: 50.06143,
       longitude: 19.93658,
@@ -368,6 +399,7 @@ async function main() {
     },
     {
       slug: 'ljubljana',
+      popularityScore: 3.9,
       country: 'Slovenia',
       latitude: 46.05108,
       longitude: 14.50513,
