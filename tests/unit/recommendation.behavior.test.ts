@@ -1,6 +1,15 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-vi.mock('../../src/repositories/recommendation.repository');
+vi.mock('../../src/repositories/recommendation.repository', async (importOriginal) => {
+    const repository = await importOriginal<typeof import('../../src/repositories/recommendation.repository')>();
+    return {
+        ...repository,
+        findFeatureCategoriesByIds: vi.fn(),
+        findInteractionsForUser: vi.fn(),
+        findPreferencesForUser: vi.fn(),
+        findRecommendationDestinations: vi.fn(),
+    };
+});
 
 import {
     BEHAVIOR_CONFIG,
@@ -9,12 +18,16 @@ import {
     cosineSimilarity,
     getRecommendationsForUser,
 } from '../../src/services/recommendation.service';
-import {
+import * as recommendationRepository from '../../src/repositories/recommendation.repository';
+
+const {
     findFeatureCategoriesByIds,
-    findInteractionsForUser,
     findPreferencesForUser,
     findRecommendationDestinations,
-} from '../../src/repositories/recommendation.repository';
+} = recommendationRepository;
+const findInteractionsForUser = (recommendationRepository as typeof recommendationRepository & {
+    findInteractionsForUser: typeof vi.fn;
+}).findInteractionsForUser;
 
 const asMock = <T extends (...a: never[]) => unknown>(fn: T) => fn as unknown as ReturnType<typeof vi.fn>;
 

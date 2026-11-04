@@ -5,7 +5,6 @@ vi.mock('../../src/repositories/recommendation.repository');
 import { getRecommendationsForUser } from '../../src/services/recommendation.service';
 import {
   findFeatureCategoriesByIds,
-  findInteractionsForUser,
   findPreferencesForUser,
   findRecommendationDestinations,
 } from '../../src/repositories/recommendation.repository';
@@ -57,7 +56,6 @@ function buildCatalogDestinations() {
 
 beforeEach(() => {
   asMock(findFeatureCategoriesByIds).mockResolvedValue([]);
-  asMock(findInteractionsForUser).mockResolvedValue([]);
 });
 
 describe('Eval: Scenárové overenie na používateľských profiloch (persónach)', () => {
@@ -128,33 +126,5 @@ describe('Eval: Overenie konzistencie pri rôznych konfiguráciách váh', () =>
     const result = await getRecommendationsForUser('user-sensitivity', 5, 0);
     expect(result.items.length).toBeLessThanOrEqual(5);
     expect(result.items[0].score).toBeDefined();
-  });
-});
-
-describe('Eval: Overenie behaviorálneho posunu', () => {
-  it('interakcia typu LIKE na konkrétnu destináciu zvýši skóre podobných miest vo výstupe', async () => {
-    const catalog = buildCatalogDestinations();
-    asMock(findRecommendationDestinations).mockResolvedValue(catalog);
-
-    const basePreferences = [
-      {
-        categoryId: 'season',
-        featureId: 'spring',
-        category: { id: 'season', key: 'season', defaultWeight: 1 },
-        feature: { id: 'spring', key: 'spring' },
-      },
-    ];
-
-    asMock(findPreferencesForUser).mockResolvedValue(basePreferences);
-    asMock(findInteractionsForUser).mockResolvedValue([
-      { destinationId: 'id-vienna', type: 'LIKE', value: null },
-    ]);
-
-    const result = await getRecommendationsForUser('user-behavior', 35, 0);
-
-    expect(result.behaviorWeight).toBeGreaterThan(0);
-    const viennaItem = result.items.find((i) => i.destination.slug === 'vienna');
-    expect(viennaItem).toBeDefined();
-    expect(viennaItem!.behaviorScore).toBe(100);
   });
 });

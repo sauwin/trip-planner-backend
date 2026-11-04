@@ -1,13 +1,17 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import request from 'supertest';
 
-vi.mock('../../src/repositories/recommendation.repository');
+vi.mock('../../src/repositories/recommendation.repository', async (importOriginal) => ({
+    ...(await importOriginal<typeof import('../../src/repositories/recommendation.repository')>()),
+    findInteractionsForUser: vi.fn(),
+}));
 
 import app from '../../src/app';
 import * as repo from '../../src/repositories/recommendation.repository';
 import { bearer } from '../helpers';
 
 const m = <T extends (...a: never[]) => unknown>(fn: T) => fn as unknown as ReturnType<typeof vi.fn>;
+const findInteractionsForUser = (repo as typeof repo & { findInteractionsForUser: (...a: never[]) => unknown }).findInteractionsForUser;
 
 const budget = { id: 'cat-budget', key: 'budget', defaultWeight: 1 };
 const destination = (slug: string, weight: number) => ({
@@ -26,7 +30,7 @@ beforeEach(() => {
         { categoryId: budget.id, featureId: 'f1', category: budget, feature: { id: 'f1', key: 'budget-value' } },
     ]);
     m(repo.findRecommendationDestinations).mockResolvedValue([destination('rome', 1), destination('oslo', 0.5)]);
-    m(repo.findInteractionsForUser).mockResolvedValue([]);
+    m(findInteractionsForUser).mockResolvedValue([]);
 });
 
 describe('GET /api/recommendations', () => {
@@ -55,7 +59,7 @@ describe('GET /api/recommendations', () => {
     });
 
     it('200 s behaviorálnou zložkou: obľúbená destinácia zmení skóre a odpoveď obsahuje behaviorWeight', async () => {
-        m(repo.findInteractionsForUser).mockResolvedValue([{ destinationId: 'oslo', type: 'LIKE', value: null }]);
+        m(findInteractionsForUser).mockResolvedValue([{ destinationId: 'oslo', type: 'LIKE', value: null }]);
         const res = await request(app).get('/api/recommendations').set(bearer());
 
         expect(res.status).toBe(200);
