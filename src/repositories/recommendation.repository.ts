@@ -1,3 +1,4 @@
+import { InteractionType } from '../generated/prisma/browser';
 import { prisma } from '../lib/prisma';
 
 export async function findPreferencesForUser(userId: string) {
@@ -29,24 +30,31 @@ export async function findRecommendationDestinations() {
   });
 }
 
-export async function findInteractionsForUser(userId: string) {
+export async function findUserInteractions(userId: string) {
+  const destinationSelect = { select: { slug: true, country: true, translations: true } } as const;
   const [interactions, reviews] = await Promise.all([
     prisma.interaction.findMany({
       where: { userId },
-      select: { destinationId: true, type: true, value: true },
+      include: { destination: destinationSelect },
+      orderBy: { createdAt: 'desc' },
     }),
     prisma.destinationReview.findMany({
       where: { userId },
-      select: { destinationId: true, rating: true },
+      include: { destination: destinationSelect },
+      orderBy: { createdAt: 'desc' },
     }),
   ]);
 
   return [
     ...interactions,
     ...reviews.map((r) => ({
+      id: r.id,
+      userId: r.userId,
       destinationId: r.destinationId,
-      type: 'RATING',
+      type: InteractionType.RATING,
       value: r.rating,
+      createdAt: r.createdAt,
+      destination: r.destination,
     })),
-  ];
+  ].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 }

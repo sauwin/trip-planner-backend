@@ -29,7 +29,6 @@ const pref = (category: typeof budget, featureId: string, key: string) => ({
     feature: { id: featureId, key },
 });
 
-/** Destinácia zadaná ako zoznam dvojíc [featureId, váha]. */
 const dest = (slug: string, features: Array<[string, number]>) => ({
     id: `id-${slug}`,
     slug,

@@ -103,7 +103,7 @@ describe('Eval: Scenárové overenie na používateľských profiloch (persónac
   });
 });
 
-describe('Eval: Analýza citlivosti váh', () => {
+describe('Eval: Overenie konzistencie pri rôznych konfiguráciách váh', () => {
   it('rebríček Top-5 zostáva stabilný pri zmene váh vedľajších charakteristík', async () => {
     const catalog = buildCatalogDestinations();
     asMock(findRecommendationDestinations).mockResolvedValue(catalog);
