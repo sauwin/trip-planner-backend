@@ -6,10 +6,10 @@ import { createDestinationSchema, deleteDestinationSchema, listDestinationsQuery
 
 const router = Router();
 
-router.get('/', requireAuth, validateQuery(listDestinationsQuerySchema), listDestinations);
+router.get('/', validateQuery(listDestinationsQuerySchema), listDestinations);
 router.get('/search', validateQuery(searchDestinationsQuerySchema), searchDestinations);
-router.get('/saved', requireAuth, getSavedDestination);
-router.get('/:id', requireAuth, getDestination);
+router.get('/saved', getSavedDestination);
+router.get('/:id', getDestination);
 router.post('/', requireAuth, requireRole('ADMIN', 'SUPER_ADMIN'), validateBody(createDestinationSchema), createDestinationHandler);
 router.put('/:id', requireAuth, requireRole('ADMIN', 'SUPER_ADMIN'), validateParams(deleteDestinationSchema), validateBody(createDestinationSchema), updateDestinationHandler);
 router.delete('/:id', requireAuth, requireRole('ADMIN', 'SUPER_ADMIN'), validateParams(deleteDestinationSchema), deleteDestinationHandler);

@@ -219,7 +219,7 @@ export async function getRecommendationsForUser(
 
     const preferenceRatio = maxScore > 0 ? clamp(score / maxScore, 0, 1) : 0;
     const behaviorRatio = behaviorWeight > 0
-      ? Math.max(0, cosineSimilarity(behaviorProfile, destination.features))
+      ? Math.max(-1, Math.min(1, cosineSimilarity(behaviorProfile, destination.features)))
       : 0;
     const combinedRatio = (1 - behaviorWeight) * preferenceRatio + behaviorWeight * behaviorRatio;
     const normalizedScore = clamp(Math.round(combinedRatio * 100), 0, 100);
