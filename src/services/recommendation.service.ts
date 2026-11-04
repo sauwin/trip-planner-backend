@@ -6,24 +6,13 @@ import {
   findRecommendationDestinations,
 } from '../repositories/recommendation.repository';
 
-/**
- * Parametre behaviorálnej zložky odporúčania.
- * Celkové skóre = (1 - lambda) * skóre preferencií + lambda * skóre správania,
- * pričom lambda rastie s počtom destinácií, s ktorými používateľ interagoval.
- */
 export const BEHAVIOR_CONFIG = {
-  /** Maximálny podiel správania v celkovom skóre. */
   maxWeight: 0.4,
-  /** Prírastok podielu správania za každú destináciu s nenulovým záujmom. */
   weightPerDestination: 0.1,
-  /** Záujem získaný jedným zobrazením detailu destinácie. */
   viewStep: 0.1,
-  /** Horná hranica záujmu získaného zobrazeniami jednej destinácie. */
   viewCap: 0.3,
-  /** Záujem získaný označením „páči sa mi“ alebo uložením destinácie. */
   likeValue: 1,
   saveValue: 1,
-  /** Hodnotenie 1 až 5 sa prepočíta na záujem (hodnotenie - 3) / 2, teda -1 až +1. */
   ratingNeutral: 3,
   ratingScale: 2,
 } as const;
@@ -41,7 +30,6 @@ interface FeatureWeight {
 
 const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value));
 
-/** Záujem používateľa o jednotlivé destinácie v intervale -1 až +1. */
 export function computeInterestByDestination(interactions: InteractionRow[]): Map<string, number> {
   const views = new Map<string, number>();
   const ratings = new Map<string, number[]>();
@@ -79,7 +67,6 @@ export function computeInterestByDestination(interactions: InteractionRow[]): Ma
   return interest;
 }
 
-/** Profil správania: vážený súčet vektorov vlastností destinácií, o ktoré mal používateľ záujem. */
 export function buildBehaviorProfile(
   interest: Map<string, number>,
   destinations: Array<{ id: string; features: FeatureWeight[] }>,
@@ -95,7 +82,6 @@ export function buildBehaviorProfile(
   return profile;
 }
 
-/** Kosínusová podobnosť profilu správania a vektora vlastností destinácie (záporné hodnoty sa orežú na 0). */
 export function cosineSimilarity(profile: Map<string, number>, features: FeatureWeight[]): number {
   let dot = 0;
   let featureNorm = 0;
@@ -213,7 +199,7 @@ export async function getRecommendationsForUser(
       maxScore += categoryWeight;
       const bestMatchWeight = categoryPreferences.reduce((bestWeight, preference) => {
         const match = destinationFeatureById.get(preference.featureId);
-        return Math.max(bestWeight, Math.max(0, Math.min(1, match?.weight ?? 0)));
+        return Math.max(bestWeight, clamp(match?.weight ?? 0, 0, 1));
       }, 0);
       score += categoryWeight * bestMatchWeight;
 
