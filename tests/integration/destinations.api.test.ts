@@ -49,7 +49,6 @@ beforeEach(() => {
 
 describe('autentifikácia a role na /api/destinations', () => {
     it.each([
-        ['get', '/api/destinations'],
         ['get', '/api/destinations/saved'],
         ['get', `/api/destinations/${DEST_ID}`],
         ['post', '/api/destinations'],

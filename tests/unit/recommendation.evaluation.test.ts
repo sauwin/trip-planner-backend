@@ -150,12 +150,11 @@ describe('Eval: Overenie behaviorálneho posunu', () => {
       { destinationId: 'id-vienna', type: 'LIKE', value: null },
     ]);
 
-    const result = await getRecommendationsForUser('user-behavior', 5, 0);
-    
+    const result = await getRecommendationsForUser('user-behavior', 35, 0);
+
     expect(result.behaviorWeight).toBeGreaterThan(0);
     const viennaItem = result.items.find((i) => i.destination.slug === 'vienna');
-    if (viennaItem) {
-      expect(viennaItem.behaviorScore).toBe(100);
-    }
+    expect(viennaItem).toBeDefined();
+    expect(viennaItem!.behaviorScore).toBe(100);
   });
 });
