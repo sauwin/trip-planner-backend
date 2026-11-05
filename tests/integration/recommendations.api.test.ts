@@ -3,7 +3,10 @@ import request from 'supertest';
 
 vi.mock('../../src/repositories/recommendation.repository', async (importOriginal) => ({
     ...(await importOriginal<typeof import('../../src/repositories/recommendation.repository')>()),
+    findFeatureCategoriesByIds: vi.fn(),
     findInteractionsForUser: vi.fn(),
+    findPreferencesForUser: vi.fn(),
+    findRecommendationDestinations: vi.fn(),
 }));
 
 import app from '../../src/app';

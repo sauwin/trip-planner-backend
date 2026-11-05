@@ -30,7 +30,7 @@ export async function findRecommendationDestinations() {
   });
 }
 
-export async function findUserInteractions(userId: string) {
+export async function findInteractionsForUser(userId: string) {
   const destinationSelect = { select: { slug: true, country: true, translations: true } } as const;
   const [interactions, reviews] = await Promise.all([
     prisma.interaction.findMany({

@@ -1,6 +1,7 @@
 import { recommendationCategoryKeys } from '../data/recommendationCatalog';
 import {
   findFeatureCategoriesByIds,
+  findInteractionsForUser,
   findPreferencesForUser,
   findRecommendationDestinations,
 } from '../repositories/recommendation.repository';
@@ -165,7 +166,7 @@ export async function getRecommendationsForUser(
 
   const destinations = await findRecommendationDestinations();
 
-  const interactions: InteractionRow[] = [];
+  const interactions = (await findInteractionsForUser(userId)) ?? [];
   const interestByDestination = computeInterestByDestination(interactions);
   const knownDestinationIds = new Set(destinations.map(({ id }) => id));
   for (const destinationId of [...interestByDestination.keys()]) {
