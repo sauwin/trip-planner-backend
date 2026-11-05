@@ -101,8 +101,8 @@ describe('Eval: Scenárové overenie na používateľských profiloch (persónac
   });
 });
 
-describe('Eval: Overenie konzistencie pri rôznych konfiguráciách váh', () => {
-  it('rebríček Top-5 zostáva stabilný pri zmene váh vedľajších charakteristík', async () => {
+describe('Eval: Overenie korektnosti výpočtu', () => {
+  it('vráti najviac 5 položiek so skóre', async () => {
     const catalog = buildCatalogDestinations();
     asMock(findRecommendationDestinations).mockResolvedValue(catalog);
 
