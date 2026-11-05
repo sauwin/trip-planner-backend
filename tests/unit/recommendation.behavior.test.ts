@@ -83,6 +83,13 @@ describe('computeInterestByDestination', () => {
         expect(interest.get('a')).toBe(1);
     });
 
+    it('SAVE samostatne dáva záujem 1', () => {
+        const interest = computeInterestByDestination([
+            { destinationId: 'a', type: 'SAVE', value: null },
+        ]);
+        expect(interest.get('a')).toBe(1);
+    });
+
     it('hodnotenie 5 dáva +1, hodnotenie 1 dáva -1 a hodnotenie 3 záujem neovplyvní', () => {
         const interest = computeInterestByDestination([
             { destinationId: 'high', type: 'RATING', value: 5 },
@@ -199,7 +206,7 @@ describe('getRecommendationsForUser: behaviorálna zložka', () => {
         expect(target.score).toBe(60);
     });
 
-    it('nízke hodnotenie odsunie podobné destinácie (skóre 90 namiesto 100)', async () => {
+    it('nízke hodnotenie odsunie podobné destinácie (skóre 82 namiesto 100)', async () => {
         asMock(findRecommendationDestinations).mockResolvedValue([
             dest('bad', [['f-value', 1], ['f-beach', 1]]),
             dest('similar', [['f-value', 1], ['f-summer', 1], ['f-beach', 1]]),

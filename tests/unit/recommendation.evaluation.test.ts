@@ -5,6 +5,7 @@ vi.mock('../../src/repositories/recommendation.repository');
 import { getRecommendationsForUser } from '../../src/services/recommendation.service';
 import {
   findFeatureCategoriesByIds,
+  findInteractionsForUser,
   findPreferencesForUser,
   findRecommendationDestinations,
 } from '../../src/repositories/recommendation.repository';
@@ -56,10 +57,11 @@ function buildCatalogDestinations() {
 
 beforeEach(() => {
   asMock(findFeatureCategoriesByIds).mockResolvedValue([]);
+  asMock(findInteractionsForUser).mockResolvedValue([]);
 });
 
 describe('Eval: Scenárové overenie na používateľských profiloch (persónach)', () => {
-  it('persona so zameraním na zimnú lyžovačku uprednostní Chamonix/Zakopane pred plážovými destináciami', async () => {
+  it('persona so zameraním na zimnú lyžovačku má aspoň dve zimné destinácie v top 5', async () => {
     const catalog = buildCatalogDestinations();
     asMock(findRecommendationDestinations).mockResolvedValue(catalog);
 

@@ -166,7 +166,7 @@ export async function getRecommendationsForUser(
 
   const destinations = await findRecommendationDestinations();
 
-  const interactions = (await findInteractionsForUser(userId)) ?? [];
+  const interactions = await findInteractionsForUser(userId);
   const interestByDestination = computeInterestByDestination(interactions);
   const knownDestinationIds = new Set(destinations.map(({ id }) => id));
   for (const destinationId of [...interestByDestination.keys()]) {

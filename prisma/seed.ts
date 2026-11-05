@@ -449,10 +449,11 @@ async function main() {
       }
     }
 
+    const { popularityScore, ...destinationUpdate } = data;
     const destination = await prisma.destination.upsert({
       where: { slug: data.slug },
-      create: data,
-      update: data,
+      create: { ...destinationUpdate, popularityScore },
+      update: destinationUpdate,
     });
     destinationIds.push(destination.id);
     destinationFeatureRows.push(

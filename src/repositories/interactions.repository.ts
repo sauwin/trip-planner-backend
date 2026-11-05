@@ -35,11 +35,32 @@ export async function deleteInteractions(
 }
 
 export async function findUserInteractions(userId: string) {
-  return prisma.interaction.findMany({
-    where: { userId },
-    include: { destination: { select: { slug: true, country: true, translations: true } } },
-    orderBy: { createdAt: 'desc' },
-  });
+  const destinationSelect = { select: { slug: true, country: true, translations: true } } as const;
+  const [interactions, reviews] = await Promise.all([
+    prisma.interaction.findMany({
+      where: { userId },
+      include: { destination: destinationSelect },
+      orderBy: { createdAt: 'desc' },
+    }),
+    prisma.destinationReview.findMany({
+      where: { userId },
+      include: { destination: destinationSelect },
+      orderBy: { createdAt: 'desc' },
+    }),
+  ]);
+
+  return [
+    ...interactions,
+    ...reviews.map((r) => ({
+      id: r.id,
+      userId: r.userId,
+      destinationId: r.destinationId,
+      type: InteractionType.RATING,
+      value: r.rating,
+      createdAt: r.createdAt,
+      destination: r.destination,
+    })),
+  ].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 }
 
 export async function findDestinationInteractions(
