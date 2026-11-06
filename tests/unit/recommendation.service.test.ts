@@ -7,6 +7,7 @@ import {
     findPreferencesForUser,
     findRecommendationDestinations,
     findFeatureCategoriesByIds,
+    findInteractionsForUser,
 } from '../../src/repositories/recommendation.repository';
 
 const budget = { id: 'cat-budget', key: 'budget', defaultWeight: 1 };
@@ -40,6 +41,7 @@ beforeEach(() => {
     asMock(findPreferencesForUser).mockResolvedValue([]);
     asMock(findRecommendationDestinations).mockResolvedValue([]);
     asMock(findFeatureCategoriesByIds).mockResolvedValue([]);
+    asMock(findInteractionsForUser).mockResolvedValue([]);
 });
 
 describe('getRecommendationsForUser', () => {
