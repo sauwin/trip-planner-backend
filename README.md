@@ -121,6 +121,8 @@ npm run db:seed
 npm run dev
 ```
 
+The seed script also removes feature and category records that are no longer in the current catalog. Cascading deletes can remove their destination-feature assignments and user preferences, so rerun it only where that cleanup is intended; back up production data first.
+
 The API listens on port `3000` by default. `PORT` can change this. Set `FRONTEND_URL` to the frontend origin if it differs from `http://localhost:5173`. Configure SMTP variables to deliver password-reset and contact emails; without a working SMTP configuration, email delivery is unavailable.
 
 ### Configuration
