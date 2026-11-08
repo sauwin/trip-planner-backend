@@ -33,6 +33,13 @@ async function main() {
     }
   }
 
+  await prisma.feature.deleteMany({
+    where: { key: { notIn: [...recommendationFeatureKeys] } },
+  });
+  await prisma.featureCategory.deleteMany({
+    where: { key: { notIn: [...recommendationCategoryKeys] } },
+  });
+
   const destinations = [
     {
       slug: 'zakopane',

@@ -61,7 +61,7 @@ beforeEach(() => {
 });
 
 describe('Eval: Scenárové overenie na používateľských profiloch (persónach)', () => {
-  it('persona so zameraním na zimnú lyžovačku má aspoň dve zimné destinácie v top 5', async () => {
+  it('persona so zameraním na zimnú lyžovačku má aspoň dve z vopred určených destinácií v top 5', async () => {
     const catalog = buildCatalogDestinations();
     asMock(findRecommendationDestinations).mockResolvedValue(catalog);
 
@@ -95,8 +95,8 @@ describe('Eval: Scenárové overenie na používateľských profiloch (persónac
     const result = await getRecommendationsForUser('user-persona-1', 5, 0);
     const topSlugs = result.items.map((i) => i.destination.slug);
 
-    const winterDestinations = ['chamonix', 'zakopane', 'whistler', 'interlaken', 'reykjavik'];
-    const matchedCount = topSlugs.filter((s) => winterDestinations.includes(s)).length;
+    const expectedDestinations = ['chamonix', 'zakopane', 'whistler', 'interlaken', 'reykjavik'];
+    const matchedCount = topSlugs.filter((s) => expectedDestinations.includes(s)).length;
 
     expect(matchedCount).toBeGreaterThanOrEqual(2);
     expect(result.items[0].score).toBeGreaterThan(70);
