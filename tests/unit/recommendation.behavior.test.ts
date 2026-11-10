@@ -211,14 +211,22 @@ describe('getRecommendationsForUser: behaviorálna zložka', () => {
             dest('bad', [['f-value', 1], ['f-beach', 1]]),
             dest('similar', [['f-value', 1], ['f-summer', 1], ['f-beach', 1]]),
         ]);
+
+        asMock(findInteractionsForUser).mockResolvedValue([]);
+        const baseline = await getRecommendationsForUser('u1');
+        const baselineSimilar = baseline.items.find((i) => i.destination.slug === 'similar')!;
+
         asMock(findInteractionsForUser).mockResolvedValue([{ destinationId: 'id-bad', type: 'RATING', value: 1 }]);
 
         const result = await getRecommendationsForUser('u1');
         const similar = result.items.find((i) => i.destination.slug === 'similar')!;
 
+        expect(baselineSimilar.score).toBe(100);
+        expect(similar.preferenceScore).toBe(100);
         expect(result.behaviorWeight).toBe(0.1);
         expect(similar.behaviorScore).toBe(-82);
         expect(similar.score).toBe(82);
+        expect(similar.score).toBeLessThan(baselineSimilar.score);
     });
 
     it('interakcie s neexistujúcou destináciou sa ignorujú', async () => {
