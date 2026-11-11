@@ -72,6 +72,14 @@ describe('trips schémy', () => {
         expect(updateTripSchema.safeParse({ startDate: null, endDate: null, budgetTotal: null }).success).toBe(true);
     });
 
+    it('updateTripSchema povolí zmenu dátumov itinerára spolu s cestou', () => {
+        expect(updateTripSchema.safeParse({
+            startDate: '2026-11-01T00:00:00.000Z',
+            endDate: '2026-11-10T00:00:00.000Z',
+            shiftDestinationDates: true,
+        }).success).toBe(true);
+    });
+
     it('addDestinationSchema vyžaduje UUID a platnú URL ubytovania', () => {
         expect(addDestinationSchema.safeParse({ destinationId: 'nie-uuid' }).success).toBe(false);
         expect(

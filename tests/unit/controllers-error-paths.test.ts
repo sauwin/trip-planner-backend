@@ -485,6 +485,10 @@ describe('trips.controller – chybové vetvy', () => {
         const updateRes = response();
         await updateTripHandler(request({ params: { id: 't1' } }), updateRes);
         expect(updateRes.status).toHaveBeenCalledWith(400);
+        expect(updateRes.json).toHaveBeenCalledWith({
+            error: 'Trip dates must include all destination dates',
+            code: 'TRIP_DATE_RANGE_CONFLICT',
+        });
     });
 
     it('spracuje chybu pri mazaní cesty a chýbajúcu cestu pri aktualizácii', async () => {

@@ -129,14 +129,25 @@ export async function deleteDestinationHandler(req: AuthenticatedRequest, res: R
 export async function updateTripHandler(req: AuthenticatedRequest, res: Response) {
   try {
     const tripId = getParamId(req.params.id);
-    const { title, budgetTotal, peopleCount, startDate, endDate } = req.body;
-    const updatedTrip = await updateTrip(req.userId!, tripId, { title, budgetTotal, peopleCount, startDate, endDate });
+    const { title, budgetTotal, peopleCount, startDate, endDate, shiftDestinationDates } = req.body;
+    const updatedTrip = await updateTrip(req.userId!, tripId, {
+      title,
+      budgetTotal,
+      peopleCount,
+      startDate,
+      endDate,
+      shiftDestinationDates,
+    });
     res.json(updatedTrip);
   } catch (error) {
     handleServiceError(error, res, 'Failed to update trip', {
       ...TRIP_NOT_FOUND,
       INVALID_DATE_RANGE: { status: 400, message: 'endDate must be on or after startDate' },
-      TRIP_DATE_RANGE_CONFLICT: { status: 400, message: 'Trip dates must include all destination dates' },
+      TRIP_DATE_RANGE_CONFLICT: {
+        status: 400,
+        message: 'Trip dates must include all destination dates',
+        code: 'TRIP_DATE_RANGE_CONFLICT',
+      },
     });
   }
 }

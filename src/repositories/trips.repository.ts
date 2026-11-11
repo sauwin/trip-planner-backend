@@ -128,15 +128,64 @@ export async function findTripDestinationDateRanges(tripId: string) {
   });
 }
 
-export async function updateTripRecord(
+interface TripRecordUpdate {
+  title?: string;
+  budgetTotal?: number | null;
+  peopleCount?: number;
+  startDate?: Date | null;
+  endDate?: Date | null;
+}
+
+export async function updateTripAndShiftDestinationDates(
+  userId: string,
   tripId: string,
-  data: {
-    title?: string;
-    budgetTotal?: number | null;
-    peopleCount?: number;
-    startDate?: Date | null;
-    endDate?: Date | null;
-  },
+  data: TripRecordUpdate,
+  dateOffsetDays: number,
 ) {
+  return prisma.$transaction(async (transaction) => {
+    const trip = await transaction.trip.findFirst({
+      where: { id: tripId, userId },
+      select: { id: true },
+    });
+    if (!trip) throw new Error('TRIP_NOT_FOUND');
+
+    const destinations = await transaction.tripDestination.findMany({
+      where: { tripId },
+      select: { destinationId: true, plannedDateStart: true, plannedDateEnd: true },
+    });
+    const shiftDate = (date: Date | null) => date
+      ? new Date(date.getTime() + dateOffsetDays * 24 * 60 * 60 * 1000)
+      : null;
+    const shiftedDestinations = destinations.map((destination) => ({
+      ...destination,
+      plannedDateStart: shiftDate(destination.plannedDateStart),
+      plannedDateEnd: shiftDate(destination.plannedDateEnd),
+    }));
+
+    const datesConflict = shiftedDestinations.some(({ plannedDateStart, plannedDateEnd }) =>
+      [plannedDateStart, plannedDateEnd].some((date) =>
+        date !== null && (
+          (data.startDate && date < data.startDate) ||
+          (data.endDate && date > data.endDate)
+        ),
+      ),
+    );
+    if (datesConflict) throw new Error('TRIP_DATE_RANGE_CONFLICT');
+
+    for (const destination of shiftedDestinations) {
+      await transaction.tripDestination.update({
+        where: { tripId_destinationId: { tripId, destinationId: destination.destinationId } },
+        data: {
+          plannedDateStart: destination.plannedDateStart,
+          plannedDateEnd: destination.plannedDateEnd,
+        },
+      });
+    }
+
+    return transaction.trip.update({ where: { id: tripId }, data });
+  });
+}
+
+export async function updateTripRecord(tripId: string, data: TripRecordUpdate) {
   return prisma.trip.update({ where: { id: tripId }, data });
 }

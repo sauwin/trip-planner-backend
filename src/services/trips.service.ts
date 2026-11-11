@@ -10,9 +10,12 @@ import {
   findTripDestinationDates,
   findTripForUser,
   findTripsForUser,
+  updateTripAndShiftDestinationDates,
   updateTripDestination,
   updateTripRecord,
 } from '../repositories/trips.repository';
+
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 interface TripDestinationDetailsInput {
   accommodationName?: string | null;
@@ -149,9 +152,16 @@ export async function deleteDestinationFromTrip(userId: string, tripId: string, 
 export async function updateTrip(
   userId: string,
   tripId: string,
-  data: Partial<{ title: string; budgetTotal: number | null; peopleCount: number; startDate: string | null; endDate: string | null }>,
+  data: Partial<{
+    title: string;
+    budgetTotal: number | null;
+    peopleCount: number;
+    startDate: string | null;
+    endDate: string | null;
+    shiftDestinationDates: boolean;
+  }>,
 ) {
-  const { startDate, endDate, ...rest } = data;
+  const { startDate, endDate, shiftDestinationDates, ...rest } = data;
   const existing = await findTripDateRangeForUser(userId, tripId);
   if (!existing) throw new Error('TRIP_NOT_FOUND');
 
@@ -159,6 +169,26 @@ export async function updateTrip(
   const nextEndDate = endDate === undefined ? existing.endDate : endDate ? new Date(endDate) : null;
   if (nextStartDate && nextEndDate && nextEndDate < nextStartDate) {
     throw new Error('INVALID_DATE_RANGE');
+  }
+
+  const tripUpdate = {
+    ...rest,
+    startDate: startDate === undefined ? undefined : nextStartDate,
+    endDate: endDate === undefined ? undefined : nextEndDate,
+  };
+  const dateOffsetDays = shiftDestinationDates && existing.startDate && nextStartDate
+    ? Math.round((
+      Date.UTC(nextStartDate.getUTCFullYear(), nextStartDate.getUTCMonth(), nextStartDate.getUTCDate()) -
+      Date.UTC(existing.startDate.getUTCFullYear(), existing.startDate.getUTCMonth(), existing.startDate.getUTCDate())
+    ) / MS_PER_DAY)
+    : 0;
+
+  if (dateOffsetDays !== 0) {
+    return updateTripAndShiftDestinationDates(userId, tripId, {
+      ...tripUpdate,
+      startDate: nextStartDate,
+      endDate: nextEndDate,
+    }, dateOffsetDays);
   }
 
   const destinations = await findTripDestinationDateRanges(tripId);
@@ -172,9 +202,5 @@ export async function updateTrip(
     throw new Error('TRIP_DATE_RANGE_CONFLICT');
   }
 
-  return updateTripRecord(tripId, {
-    ...rest,
-    startDate: startDate === undefined ? undefined : nextStartDate,
-    endDate: endDate === undefined ? undefined : nextEndDate,
-  });
+  return updateTripRecord(tripId, tripUpdate);
 }

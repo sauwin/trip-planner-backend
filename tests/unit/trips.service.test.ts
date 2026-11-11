@@ -101,6 +101,31 @@ describe('updateTrip', () => {
         expect(repo.updateTripRecord).not.toHaveBeenCalled();
     });
 
+    it('atomically shifts destination dates when moving the trip start', async () => {
+        m(repo.findTripDateRangeForUser).mockResolvedValue({
+            startDate: new Date('2026-09-01T00:00:00.000Z'),
+            endDate: new Date('2026-09-10T00:00:00.000Z'),
+        });
+        m(repo.updateTripAndShiftDestinationDates).mockResolvedValue({ id: 't1' });
+
+        await updateTrip('u1', 't1', {
+            startDate: '2026-11-01T00:00:00.000Z',
+            endDate: '2026-11-10T00:00:00.000Z',
+            shiftDestinationDates: true,
+        });
+
+        expect(repo.updateTripAndShiftDestinationDates).toHaveBeenCalledWith(
+            'u1',
+            't1',
+            expect.objectContaining({
+                startDate: new Date('2026-11-01T00:00:00.000Z'),
+                endDate: new Date('2026-11-10T00:00:00.000Z'),
+            }),
+            61,
+        );
+        expect(repo.updateTripRecord).not.toHaveBeenCalled();
+    });
+
     it('uloží zmenu názvu bez zásahu do dátumov', async () => {
         const result = (await updateTrip('u1', 't1', { title: 'Nový názov' })) as unknown as Record<string, unknown>;
         expect(result.title).toBe('Nový názov');
