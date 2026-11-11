@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { registerSchema, loginSchema, resetPasswordSchema, forgotPasswordSchema } from '../../src/schemas/auth.schema';
 import { createTripSchema, updateTripSchema, addDestinationSchema, updateTripDestinationDetailsSchema } from '../../src/schemas/trips.schema';
-import { createExpenseSchema } from '../../src/schemas/expenses.schema';
+import { createExpenseSchema, updateExpenseSchema } from '../../src/schemas/expenses.schema';
 import { listRecommendationsQuerySchema } from '../../src/schemas/recommendation.schema';
 import { listDestinationsQuerySchema } from '../../src/schemas/destinations.schema';
 
@@ -76,7 +76,7 @@ describe('trips schémy', () => {
         expect(updateTripSchema.safeParse({
             startDate: '2026-11-01T00:00:00.000Z',
             endDate: '2026-11-10T00:00:00.000Z',
-            shiftDestinationDates: true,
+            shiftRelatedDates: true,
         }).success).toBe(true);
     });
 
@@ -101,6 +101,11 @@ describe('expenses schéma', () => {
 
     it('akceptuje platný výdavok', () => {
         expect(createExpenseSchema.safeParse({ description: 'Obed', amount: 12.5, category: 'FOOD' }).success).toBe(true);
+    });
+
+    it('povolí zmenu dátumu výdavku na platný ISO dátum', () => {
+        expect(updateExpenseSchema.safeParse({ date: '2026-11-04T00:00:00.000Z' }).success).toBe(true);
+        expect(updateExpenseSchema.safeParse({ date: 'not-a-date' }).success).toBe(false);
     });
 });
 

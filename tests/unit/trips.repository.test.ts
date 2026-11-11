@@ -11,14 +11,18 @@ const { prismaMock } = vi.hoisted(() => ({
       findMany: vi.fn(),
       update: vi.fn(),
     },
+    expense: {
+      findMany: vi.fn(),
+      update: vi.fn(),
+    },
   },
 }));
 
 vi.mock('../../src/lib/prisma', () => ({ prisma: prismaMock }));
 
-import { updateTripAndShiftDestinationDates } from '../../src/repositories/trips.repository';
+import { updateTripAndShiftRelatedDates } from '../../src/repositories/trips.repository';
 
-describe('updateTripAndShiftDestinationDates', () => {
+describe('updateTripAndShiftRelatedDates', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     prismaMock.$transaction.mockImplementation(async (callback) => callback(prismaMock));
@@ -29,16 +33,21 @@ describe('updateTripAndShiftDestinationDates', () => {
       plannedDateEnd: new Date('2026-09-05T00:00:00.000Z'),
     }]);
     prismaMock.tripDestination.update.mockResolvedValue({});
+    prismaMock.expense.findMany.mockResolvedValue([{
+      id: 'expense-1',
+      date: new Date('2026-09-04T00:00:00.000Z'),
+    }]);
+    prismaMock.expense.update.mockResolvedValue({});
     prismaMock.trip.update.mockResolvedValue({ id: 'trip-1' });
   });
 
-  it('updates trip and itinerary dates in one transaction', async () => {
+  it('updates trip, itinerary, and expense dates in one transaction', async () => {
     const tripUpdate = {
       startDate: new Date('2026-11-01T00:00:00.000Z'),
       endDate: new Date('2026-11-10T00:00:00.000Z'),
     };
 
-    await updateTripAndShiftDestinationDates('user-1', 'trip-1', tripUpdate, 61);
+    await updateTripAndShiftRelatedDates('user-1', 'trip-1', tripUpdate, 61);
 
     expect(prismaMock.$transaction).toHaveBeenCalledOnce();
     expect(prismaMock.tripDestination.update).toHaveBeenCalledWith({
@@ -52,15 +61,20 @@ describe('updateTripAndShiftDestinationDates', () => {
       where: { id: 'trip-1' },
       data: tripUpdate,
     });
+    expect(prismaMock.expense.update).toHaveBeenCalledWith({
+      where: { id: 'expense-1' },
+      data: { date: new Date('2026-11-04T00:00:00.000Z') },
+    });
   });
 
   it('rejects a shifted itinerary that no longer fits the new trip range', async () => {
-    await expect(updateTripAndShiftDestinationDates('user-1', 'trip-1', {
+    await expect(updateTripAndShiftRelatedDates('user-1', 'trip-1', {
       startDate: new Date('2026-11-01T00:00:00.000Z'),
       endDate: new Date('2026-11-03T00:00:00.000Z'),
     }, 61)).rejects.toThrow('TRIP_DATE_RANGE_CONFLICT');
 
     expect(prismaMock.tripDestination.update).not.toHaveBeenCalled();
+    expect(prismaMock.expense.update).not.toHaveBeenCalled();
     expect(prismaMock.trip.update).not.toHaveBeenCalled();
   });
 });

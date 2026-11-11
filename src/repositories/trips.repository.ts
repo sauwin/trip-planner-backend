@@ -136,7 +136,7 @@ interface TripRecordUpdate {
   endDate?: Date | null;
 }
 
-export async function updateTripAndShiftDestinationDates(
+export async function updateTripAndShiftRelatedDates(
   userId: string,
   tripId: string,
   data: TripRecordUpdate,
@@ -179,6 +179,17 @@ export async function updateTripAndShiftDestinationDates(
           plannedDateStart: destination.plannedDateStart,
           plannedDateEnd: destination.plannedDateEnd,
         },
+      });
+    }
+
+    const expenses = await transaction.expense.findMany({
+      where: { tripId },
+      select: { id: true, date: true },
+    });
+    for (const expense of expenses) {
+      await transaction.expense.update({
+        where: { id: expense.id },
+        data: { date: new Date(expense.date.getTime() + dateOffsetDays * 24 * 60 * 60 * 1000) },
       });
     }
 

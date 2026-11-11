@@ -129,14 +129,14 @@ export async function deleteDestinationHandler(req: AuthenticatedRequest, res: R
 export async function updateTripHandler(req: AuthenticatedRequest, res: Response) {
   try {
     const tripId = getParamId(req.params.id);
-    const { title, budgetTotal, peopleCount, startDate, endDate, shiftDestinationDates } = req.body;
+    const { title, budgetTotal, peopleCount, startDate, endDate, shiftRelatedDates } = req.body;
     const updatedTrip = await updateTrip(req.userId!, tripId, {
       title,
       budgetTotal,
       peopleCount,
       startDate,
       endDate,
-      shiftDestinationDates,
+      shiftRelatedDates,
     });
     res.json(updatedTrip);
   } catch (error) {

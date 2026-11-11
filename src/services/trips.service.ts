@@ -10,7 +10,7 @@ import {
   findTripDestinationDates,
   findTripForUser,
   findTripsForUser,
-  updateTripAndShiftDestinationDates,
+  updateTripAndShiftRelatedDates,
   updateTripDestination,
   updateTripRecord,
 } from '../repositories/trips.repository';
@@ -158,10 +158,10 @@ export async function updateTrip(
     peopleCount: number;
     startDate: string | null;
     endDate: string | null;
-    shiftDestinationDates: boolean;
+    shiftRelatedDates: boolean;
   }>,
 ) {
-  const { startDate, endDate, shiftDestinationDates, ...rest } = data;
+  const { startDate, endDate, shiftRelatedDates, ...rest } = data;
   const existing = await findTripDateRangeForUser(userId, tripId);
   if (!existing) throw new Error('TRIP_NOT_FOUND');
 
@@ -176,7 +176,7 @@ export async function updateTrip(
     startDate: startDate === undefined ? undefined : nextStartDate,
     endDate: endDate === undefined ? undefined : nextEndDate,
   };
-  const dateOffsetDays = shiftDestinationDates && existing.startDate && nextStartDate
+  const dateOffsetDays = shiftRelatedDates && existing.startDate && nextStartDate
     ? Math.round((
       Date.UTC(nextStartDate.getUTCFullYear(), nextStartDate.getUTCMonth(), nextStartDate.getUTCDate()) -
       Date.UTC(existing.startDate.getUTCFullYear(), existing.startDate.getUTCMonth(), existing.startDate.getUTCDate())
@@ -184,7 +184,7 @@ export async function updateTrip(
     : 0;
 
   if (dateOffsetDays !== 0) {
-    return updateTripAndShiftDestinationDates(userId, tripId, {
+    return updateTripAndShiftRelatedDates(userId, tripId, {
       ...tripUpdate,
       startDate: nextStartDate,
       endDate: nextEndDate,

@@ -36,11 +36,14 @@ export async function updateExpense(
   userId: string,
   tripId: string,
   expenseId: string,
-  data: { description?: string; amount?: number; category?: ExpenseCategory },
+  data: { description?: string; amount?: number; category?: ExpenseCategory; date?: string },
 ) {
   await assertTripOwnership(userId, tripId);
 
-  return updateExpenseRecord(expenseId, tripId, data);
+  return updateExpenseRecord(expenseId, tripId, {
+    ...data,
+    date: data.date ? new Date(data.date) : undefined,
+  });
 }
 
 export async function deleteExpense(userId: string, tripId: string, expenseId: string) {

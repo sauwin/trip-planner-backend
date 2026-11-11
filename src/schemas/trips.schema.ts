@@ -20,7 +20,7 @@ export const updateTripSchema = z
     peopleCount: z.number().int().positive('peopleCount must be a positive integer').optional(),
     startDate: z.string().datetime().optional().nullable(),
     endDate: z.string().datetime().optional().nullable(),
-    shiftDestinationDates: z.boolean().optional(),
+    shiftRelatedDates: z.boolean().optional(),
   })
   .refine(
     (data) => !data.startDate || !data.endDate || new Date(data.endDate) >= new Date(data.startDate),

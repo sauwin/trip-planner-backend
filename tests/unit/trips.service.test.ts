@@ -106,15 +106,15 @@ describe('updateTrip', () => {
             startDate: new Date('2026-09-01T00:00:00.000Z'),
             endDate: new Date('2026-09-10T00:00:00.000Z'),
         });
-        m(repo.updateTripAndShiftDestinationDates).mockResolvedValue({ id: 't1' });
+        m(repo.updateTripAndShiftRelatedDates).mockResolvedValue({ id: 't1' });
 
         await updateTrip('u1', 't1', {
             startDate: '2026-11-01T00:00:00.000Z',
             endDate: '2026-11-10T00:00:00.000Z',
-            shiftDestinationDates: true,
+            shiftRelatedDates: true,
         });
 
-        expect(repo.updateTripAndShiftDestinationDates).toHaveBeenCalledWith(
+        expect(repo.updateTripAndShiftRelatedDates).toHaveBeenCalledWith(
             'u1',
             't1',
             expect.objectContaining({

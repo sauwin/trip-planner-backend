@@ -21,7 +21,7 @@ export async function findTripExpenses(tripId: string) {
 export async function updateExpenseRecord(
   expenseId: string,
   tripId: string,
-  data: { description?: string; amount?: number; category?: ExpenseCategory },
+  data: { description?: string; amount?: number; category?: ExpenseCategory; date?: Date },
 ) {
   return prisma.expense.update({ where: { id: expenseId, tripId }, data });
 }
