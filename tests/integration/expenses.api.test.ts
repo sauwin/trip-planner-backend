@@ -107,6 +107,18 @@ describe('ďalšie vetvy výdavkov', () => {
         expect(saved.category).toBe('ACTIVITIES');
     });
 
+    it('PATCH s dátumom ho prevedie na Date', async () => {
+        const res = await request(app)
+            .patch(url)
+            .set(bearer())
+            .send({ date: '2026-07-02T10:00:00.000Z' });
+
+        expect(res.status).toBe(200);
+        expect(m(expenses.updateExpenseRecord).mock.calls[0][2]).toMatchObject({
+            date: new Date('2026-07-02T10:00:00.000Z'),
+        });
+    });
+
     it('POST odmietne neplatný formát dátumu (400)', async () => {
         const res = await request(app)
             .post(`/api/trips/${TRIP_ID}/expenses`)

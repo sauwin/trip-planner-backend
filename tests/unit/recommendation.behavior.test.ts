@@ -174,6 +174,20 @@ describe('getRecommendationsForUser: behaviorálna zložka', () => {
         expect(result.items.find((i) => i.destination.slug === 'a-different')!.score).toBe(97);
     });
 
+    it('pri rovnakom výslednom skóre zoradí podľa behavior skóre', async () => {
+        asMock(findRecommendationDestinations).mockResolvedValue([
+            dest('z-best', [['f-value', 1], ['f-summer', 1], ['f-beach', 1]]),
+            dest('a-close', [['f-value', 1], ['f-summer', 1], ['f-beach', 0.8]]),
+        ]);
+        asMock(findInteractionsForUser).mockResolvedValue([like('z-best')]);
+
+        const result = await getRecommendationsForUser('u1');
+
+        expect(result.items.map((item) => item.destination.slug)).toEqual(['z-best', 'a-close']);
+        expect(result.items.map((item) => item.score)).toEqual([100, 100]);
+        expect(result.items.map((item) => item.behaviorScore)).toEqual([100, 99]);
+    });
+
     it('podiel správania rastie o 0,1 za každú destináciu a je ohraničený hodnotou 0,4', async () => {
         const slugs = ['d1', 'd2', 'd3', 'd4', 'd5'];
         asMock(findRecommendationDestinations).mockResolvedValue(

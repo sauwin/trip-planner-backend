@@ -44,10 +44,10 @@ export async function listExpensesHandler(req: AuthenticatedRequest, res: Respon
 
 export async function updateExpenseHandler(req: AuthenticatedRequest, res: Response) {
   try {
-    const { description, amount, category } = req.body;
+    const { description, amount, category, date } = req.body;
     const tripId = getParamId(req.params.tripId);
     const expenseId = getParamId(req.params.expenseId);
-    const expense = await updateExpense(req.userId!, tripId, expenseId, { description, amount, category });
+    const expense = await updateExpense(req.userId!, tripId, expenseId, { description, amount, category, date });
     res.json(expense);
   } catch (error) {
     handleServiceError(error, res, 'Failed to update expense', {
