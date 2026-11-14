@@ -99,6 +99,12 @@ describe('expenses schéma', () => {
         expect(createExpenseSchema.safeParse({ description: 'x', amount: 5, category: 'PARTY' }).success).toBe(false);
     });
 
+    it('odmietne prázdny opis a odstráni okolité medzery', () => {
+        expect(createExpenseSchema.safeParse({ description: '   ', amount: 5 }).success).toBe(false);
+        expect(createExpenseSchema.parse({ description: '  Obed  ', amount: 5 }).description).toBe('Obed');
+        expect(updateExpenseSchema.safeParse({ description: '   ' }).success).toBe(false);
+    });
+
     it('akceptuje platný výdavok', () => {
         expect(createExpenseSchema.safeParse({ description: 'Obed', amount: 12.5, category: 'FOOD' }).success).toBe(true);
     });
